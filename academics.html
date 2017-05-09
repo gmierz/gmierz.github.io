@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" charset="UTF-8">
+    <title>GM - Academics</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        #section {
+            margin-left: 29%;
+            margin-top: 3%;
+            font-weight: 100;
+            font-family: "Helvetica Neue",sans-serif;
+            font-size: 200%;
+            color:black;
+        }
+        
+        #inner_sec {
+            margin-bottom: 4%;
+            width: 95%;
+            font-weight:500;
+        }
+        
+        .inner_sec_follow {
+            background-color: transparent;
+            background-image: url('background.png');
+            background-repeat: repeat-x;
+            background-attachment: scroll;
+            background-clip: border-box;
+            background-origin: padding-box;
+            background-position-x: left;
+            background-position-y: top;
+            background-size: auto auto;
+            margin-bottom: 0%;
+            padding-top: 4%;
+            width: 95%;
+            font-weight:500;
+        }
+        
+        #qualifications {
+            padding-left: 5%;
+            padding-top: 3%;
+            font-size: 0.75em;
+            font-weight: 100;
+            display:inline-block;
+            color:black;
+        }
+        
+        #specializations {
+            padding-left: 5%;
+            padding-top: 1%;
+            font-size: 0.75em;
+        }
+        
+        #datequal {
+            float:right;
+        }
+        
+        #bu_logo {
+            position:relative;
+            max-height: 100%;
+            max-width: 60%;
+            display:block;
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 5%;
+            margin-bottom: 5%;
+        }
+        
+        #contributions {
+            padding-left: 5%;
+            padding-top: 2%;
+            color:darkgrey;
+            margin-bottom: 5%;
+        }
+        
+        #contr {
+            color: black;
+            transition: color 0.15s linear;            
+            text-decoration: none;
+            font-size: 0.75em;
+        }
+        
+        #contr:hover {
+            color: blue;
+        }
+    </style>
+</head>
+
+    <body>
+        <div class="wrapper">
+            <div id="aside">
+                <div id="aside_cover">
+                    <p style="color:white; margin-bottom:5%;">
+                        Gregory <br> Mierzwinski<br>
+                    </p>
+                    
+                    <nav class="sidebar-nav">
+                        | <a href="index.html">Home</a> <br>
+                        | <a href="archives.html">Archive</a> <br>
+                        | <a href="academics.html">Academics</a> <br>
+                        | <a href="projects.html">Projects</a> <br>
+                        | <a href="contact.html">Contact</a> <br>
+                    </nav>
+                </div>
+            </div>
+
+            <div id="section">
+                <div id="inner_sec">
+                    Qualifications
+                            
+                    <div id="qualifications">
+                        <span>
+                            Bachelor's of Science, Bishop's University <span id="datequal"> June 2017  </span> <br>
+                        <div id="specializations">
+                            Honours in Computer Science <br>
+                            Minor in Mathematics
+                        </div>
+                        
+                        <a href="https://www.ubishops.ca" alt="Bishop's University">
+                            <img src="bu_logo.jpg" id="bu_logo" alt="Bishop's University"></img>
+                        </a>
+                        </span>
+                    </div>
+                </div>
+                <div class="inner_sec_follow">
+                    Academic Contributions
+                    <div id="contributions">
+                        <a href="https://www.arxiv.org/abs/1612.04861" id="contr">
+                            Some Counterexamples for Compatible Triangulations
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+
+</html>
