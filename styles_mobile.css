@@ -37,29 +37,32 @@ body {
     background-image: url('sidebars2.jpg');
     background-repeat: no-repeat;
     background-attachment: fixed;
-    background-position: left; 
-    background-size: 50% 100%;
+    background-position: top; 
+    background-size: 100% 20%;
     position: fixed;
-    max-height: 100%;
-    min-height: 100%;
-    width: 25%;
-    display: flex;
-    flex-direction: column;
+    min-width: 100%;
+    max-width: 100%;
+    height:20%;
+    display: inline-block;
     top: 0;
     left: 0;
+    margin: 0;
 }
 
 #aside_cover {
     background-color: transparent;
     margin: 5%;
-    min-height: 100%;
-    max-height: 100%;
-    max-width: 95%;
+    margin-top: 5%;
+    min-width: 100%;
+    max-width: 100%;
+    max-height: 20%;
     overflow-y: hidden;
     overflow-x: hidden;
     font-weight: 300;
     font-family: "Lato","Helvetica Neue",sans-serif;
-    font-size: 200%;
+    font-size: 1.3em;
+    display:inline-flex;
+    flex-direction: row;
 }
 
 .sidebar-nav {
@@ -67,37 +70,45 @@ body {
     border-top-width: 1px;
     border-top-style: solid;
     border-top-color: rgba(255, 255, 255, 0.5);
-    font-size: .50em;
+    font-size: 0.7em;
     color:ghostwhite;
-    min-width: 75%;
-    max-width: 75%;
-    margin:0;
+    max-width: 100%;
+    max-height: 20%;
+    height: 20%;
+    margin: 1.5em;
     padding-top: 5%;
     padding-left: 2%;
+    top:2%;
     clear: both;
     transition: color 0.5s linear;
     line-height:150%;
-    display: block;
+    display:inline-flex;
 }
 
 .sidebar-nav:hover {
     color: deepskyblue;
 }
 
-.sidebar_text { }
+.sidebar_text {
+    padding-top: 3%;
+}
+
+.clearBoth {
+    clear:both;
+}
 
 #namediv {
     color:white;
-    margin-top:12%;
-    margin-bottom:3%;
+    max-width:25%;
 }
 
 #section {
-    margin-left: 29%;
-    margin-top: 5%;
+    margin-left: 5%;
+    margin-top: 20%;
     font-weight: 300;
     font-family: "Lato","Helvetica Neue",sans-serif;
     font-size: 200%;
+    text-align: justify;
 }
 
 a {

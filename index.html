@@ -1,11 +1,11 @@
-{% seo %}
 <!DOCTYPE html>
 <html>
 
 <head>
     <meta name="viewport" content="width=800px, initial-scale=1.0" charset="UTF-8">
     <title>Greg Mierzwinski</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" media="(max-width: 4000px)" href="styles.css">
+    <link rel="stylesheet" media="(max-width: 1000px)" href="styles_mobile.css">
     <style>
         #inner_sec {
             margin-bottom: 4%;
@@ -62,17 +62,17 @@
         <div class="wrapper">
             <div id="aside">
                 <div id="aside_cover">
-                    <p style="color:white; margin-bottom:5%;">
+                    <div id="namediv">
                         Gregory <br> Mierzwinski<br>
-                    </p>
+                    </div>
                     
-                    <nav class="sidebar-nav">
-                        | <a href="index.html">Home</a> <br>
-                        | <a href="archives.html">Archive</a> <br>
-                        | <a href="academics.html">Academics</a> <br>
-                        | <a href="projects.html">Projects</a> <br>
-                        | <a href="contact.html">Contact</a> <br>
-                    </nav>
+                    <div class="sidebar-nav">
+                        <div class=".sidebar_text">| <a href="index.html">Home </a>&nbsp;</div>
+                        <div class=".sidebar_text">| <a href="archives.html">Archive </a>&nbsp;</div>
+                        <div class=".sidebar_text">| <a href="academics.html">Academics </a>&nbsp;</div>
+                        <div class=".sidebar_text">| <a href="projects.html">Projects </a>&nbsp;</div>
+                        <div class=".sidebar_text">| <a href="contact.html">Contact </a>&nbsp;</div>
+                    </div>
                 </div>
             </div>
 
