@@ -85,3 +85,14 @@ a {
 a:hover {
     color: lightskyblue;
 }
+
+#a_section_link {
+    color: gray;
+    transition: color 0.15s linear;            
+    text-decoration: none;
+    font-size: 0.75em;
+}
+
+#a_section_link:hover {
+    color: blue;
+}
