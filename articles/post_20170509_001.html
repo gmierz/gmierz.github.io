@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=800px, initial-scale=1.0" charset="UTF-8">
+    <title>Greg Mierzwinski</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>        
+        #inner_sec {
+            margin-bottom: 2%;
+            width: 95%;
+            font-weight:500;
+        }
+        
+        #inner_sec_follow {
+            background-color: transparent;
+            background-image: url('../background.png');
+            background-repeat: repeat-x;
+            background-attachment: scroll;
+            background-clip: border-box;
+            background-origin: padding-box;
+            background-position-x: left;
+            background-position-y: top;
+            background-size: auto auto;
+            margin-bottom: 2%;
+            padding-top: 4%;
+            width: 95%;
+            font-weight:500;
+        }
+        
+        #dateline {
+            color:lightgray;
+            font-size: 0.70em;
+        }
+        
+        #title {
+            margin-top: 2%;
+            font-size:120%;
+            font-weight: 100;
+        }
+        
+        #subtitle {
+            margin-top:2%;
+            font-size: 0.70em;
+        }
+        
+        #summary {
+            margin-top:4%;
+            font-size:0.60em;
+            font-weight: 100;
+            line-height: 170%;
+        }
+        
+        #footer {
+            margin-top:3%;
+            font-size:0.50em;
+        }
+        
+        tr.add > td {
+            padding-top: 0.5em;
+        }
+        
+        code {
+            font-size: 1.2em;
+            font-family: monospace;
+            padding-left: 0.3em;
+            padding-right: 0.3em;
+        }
+    </style>
+</head>
+
+    <body>
+        <div class="wrapper">
+            <div id="aside">
+                <div id="aside_cover">
+                    <p style="color:white; margin-bottom:5%;">
+                        Gregory <br> Mierzwinski<br>
+                    </p>
+                    
+                    <nav class="sidebar-nav">
+                        | <a href="../index.html">Home</a> <br>
+                        | <a href="../archives.html">Archive</a> <br>
+                        | <a href="../academics.html">Academics</a> <br>
+                        | <a href="../projects.html">Projects</a> <br>
+                        | <a href="../contact.html">Contact</a> <br>
+                    </nav>
+                </div>
+            </div>
+
+            <div id="section">
+                <div id="inner_sec">
+                    <div id="title">Homepage/Blog Update</div>
+                    <div id="subtitle">A simple HTML & CSS refresher.</div>
+                    <div id="summary">
+                    &emsp; This week I spent some free time that I had refreshing my simple HTML skills to renew my homepage. I gave myself the challenge of strictly using HTML and CSS for this website and (however painful this may sound) without javascript to see how far I could get in as little time I could. It actually went surprisingly quickly and I've detailed the simple struggles in this post. <br> <br>
+                    
+                    &emsp; Overall, it took under 10 hours to build up the theme and base of the website. After that, I spent some time writing up the actual content (the easy part) which took about 3-4 hours of my time. In the end, I am quite pleased with the result also as it is generally aestheically pleasing in both Firefox and Chrome. My last (and first) webpage was much more rugged, very basic, and had many resizing problems (<a href="https://gwmierz.appspot.com" id="a_section_link">this one</a>). There are a couple links to some older projects on that site also. <br> <br>
+                        
+                    &emsp; The majority of the webpage was very simple to make. The hardest part was creating a sidebar that stayed still while another portion of a screen could be scrolled. The solution boiled down to using two wrappers, one for all the content, and the second for sidebar. The second wrapper contains within it an element which prevents a scroll bar from being formed. These three components together enable the sidebar to be fixed in place without being scrollable. Some CSS3 is also used to get a FlexBox. You can check out these components by inspecting the page on your browser. <br> <br>
+                        
+                    &emsp; Another problem that I had was dealing with resizing issues when I switched from a page which had a scrollbar to one which didn't. This caused the sidebar to sway back and forth. I overcame this problem by forcing the scrollbar to display in the <code>html</code> element. This actually caused an odd side-effect that created scrollbars in the inner elements of <code>wrapper</code>. The sidebar was still fine, but everything else had a scrollbar. The solution to this ended up being that the <code>body</code> element had to have it's scrollbars disabled so that every other element could have theirs disabled. <br> <br>
+                        
+                    &emsp; I can't say there were many other problems but in the progress of building the site, a lot was learned about using CSS. The main feature I discovered was the CSS transition property which was a lot of fun to play with and is used in the sidebar, the links, and the buttons at the bottom of this page. The old website definitely does not compare to this one but I can't say this website is free of problems. For one, it doesn't look well on mobile devices and I hadn't taken that into consideration when I started the website. However, this problem does give me the next post that I'll be writing. <br> <br> <br>
+                    </div>
+                    
+                    <div id="footer">
+                        <table style="width:100%;">
+                            <tr>
+                                <td>
+                                    <a href="../index.html" class="button">Home</a>
+                                </td>
+                                <td  align="right">                                    
+                                    <a href="" class="button">Previous</a>
+                                </td>
+                            </tr>
+                        </table>
+                        <table style="width:100%; color:dimgray;" cellspacing="0">
+                            <tr class="add">
+                                <td>
+                                    <div id="footer_note">
+                                        Posted on May 8th, 2017 by Gregory Mierzwinski
+                                    </div>
+                                </td>
+                                <td align="right">
+                                    <div id="footer_note">
+                                        Languages: HTML, CSS
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="inner_sec_follow">
+                
+                </div>
+            </div>
+        </div>
+    </body>
+
+</html>
