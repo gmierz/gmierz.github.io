@@ -49574,7 +49574,7 @@ var __allQueries = [];
 
 var StringManipulation = require('../StringManipulation');
 
-var randomVar_UT0VrEjNBp = [{
+var randomVar_KEvYBFARX3 = [{
   name: 'All Test Files',
   obj: {
     filter_revision: true,
@@ -49601,7 +49601,7 @@ var randomVar_UT0VrEjNBp = [{
   }
 }];
 
-__allQueries = __allQueries.concat(randomVar_UT0VrEjNBp);
+__allQueries = __allQueries.concat(randomVar_KEvYBFARX3);
 
 /*
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -49792,7 +49792,7 @@ var DiffInfoStore = _react2.default.createClass({
   displayName: 'DiffInfoStore',
 
   getInitialState: function getInitialState() {
-    return { loaded_bug_info: false, data: null, changeset: _PageStore2.default.getChangeset() };
+    return { loaded_bug_info: false, data: null, changeset: _PageStore2.default.getChangeset(), branch: _PageStore2.default.getBranch() };
   },
   componentWillMount: function componentWillMount() {
     if (!_PageStore2.default.getRevision()) {
@@ -49803,6 +49803,7 @@ var DiffInfoStore = _react2.default.createClass({
     _PageStore2.default.addChangeListener(this._onDataLoad, 'loaded_bug_info');
   },
   componentWillUnmount: function componentWillUnmount() {
+    this.setState({ loaded_bug_info: false, data: null, changeset: _PageStore2.default.getChangeset() });
     _PageStore2.default.removeChangeListener(this._onDataLoading, 'loading_bug_info');
     _PageStore2.default.removeChangeListener(this._onDataLoad, 'loaded_bug_info');
   },
@@ -49815,6 +49816,10 @@ var DiffInfoStore = _react2.default.createClass({
   },
   _onDataLoading: function _onDataLoading() {
     this.setState({ loaded_bug_info: false, data: null, changeset: this.state.changeset });
+  },
+  _onBranchPick: function _onBranchPick(event) {
+    this.setState({ branch: event.target.value });
+    _PageStore2.default.setBranch(event.target.value);
   },
   getValidationState: function getValidationState() {
     var length = this.state.changeset.length;
@@ -49853,8 +49858,8 @@ var DiffInfoStore = _react2.default.createClass({
         'div',
         null,
         _react2.default.createElement(
-          'form',
-          null,
+          _reactBootstrap.Form,
+          { horizontal: true },
           _react2.default.createElement(
             _reactBootstrap.FormGroup,
             { controlId: 'changesetForm', validationState: this.getValidationState() },
@@ -49869,8 +49874,33 @@ var DiffInfoStore = _react2.default.createClass({
               _reactBootstrap.HelpBlock,
               null,
               'Changing this field after getting results will cause you to lose everything that was generated. '
+            ),
+            _react2.default.createElement(
+              _reactBootstrap.ControlLabel,
+              null,
+              'Select a Branch'
+            ),
+            _react2.default.createElement(
+              _reactBootstrap.FormControl,
+              { onChange: this._onBranchPick, value: this.state.branch, componentClass: 'select', style: { maxWidth: '' + 50 + '%' } },
+              _react2.default.createElement(
+                'option',
+                { value: 'mozilla-central' },
+                'mozilla-central'
+              ),
+              _react2.default.createElement(
+                'option',
+                { value: 'beta' },
+                'beta'
+              ),
+              _react2.default.createElement(
+                'option',
+                { value: 'try' },
+                'try'
+              )
             )
-          )
+          ),
+          _react2.default.createElement(_reactBootstrap.FormGroup, null)
         )
       ),
       _react2.default.createElement(
