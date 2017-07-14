@@ -49574,7 +49574,7 @@ var __allQueries = [];
 
 var StringManipulation = require('../StringManipulation');
 
-var randomVar_2qzYM1LHYa = [{
+var randomVar_abHnxoLAqt = [{
   name: 'All Test Files',
   obj: {
     filter_revision: true,
@@ -49601,7 +49601,7 @@ var randomVar_2qzYM1LHYa = [{
   }
 }];
 
-__allQueries = __allQueries.concat(randomVar_2qzYM1LHYa);
+__allQueries = __allQueries.concat(randomVar_abHnxoLAqt);
 
 /*
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -49823,7 +49823,7 @@ var DiffInfoStore = _react2.default.createClass({
   },
   getValidationState: function getValidationState() {
     var length = this.state.changeset.length;
-    if (length > 10) return 'success';else if (length > 5) return 'warning';else if (length > 0) return 'error';
+    if (length >= 12) return 'success';else if (length > 0) return 'warning';
   },
   render: function render() {
     var loaded_bug_info = this.state.loaded_bug_info;
@@ -49906,6 +49906,7 @@ var DiffInfoStore = _react2.default.createClass({
       _react2.default.createElement(
         _reactBootstrap.Button,
         { onClick: function onClick() {
+            _PageStore2.default.updateURL();
             _PageStore2.default.emitChange('loading_patch_diff');
           } },
         _react2.default.createElement('i', { className: 'fa fa-bars', 'aria-hidden': 'false' }),
@@ -51068,6 +51069,22 @@ var TopLevel = _react2.default.createClass({
     _PageStore2.default.addChangeListener(this._onChange);
     _PageStore2.default.addChangeListener(this._onStartState, 'cocopatchdiff');
     _PageStore2.default.addChangeListener(this._onCocoTableState, 'cocotable');
+
+    // Check if query parameters are already given through URL.
+    // If they are store them as the defaults that should be used.
+    var url_string = location;
+    var url = new URL(url_string);
+    var changeset = url.searchParams.get("changeset");
+    console.log(changeset);
+    if (changeset) {
+      _PageStore2.default.setChangeset(changeset);
+    }
+    var branch = url.searchParams.get("branch");
+    console.log(branch);
+    if (branch) {
+      _PageStore2.default.setBranch(branch);
+    }
+
     // Get latest revision query (last two months)
     _Client2.default.makeRequest('activedata.allizom.org', {
       "sort": { "build.date": "desc" },
@@ -51255,6 +51272,8 @@ var _changeset = "ebb97fbc6c39785a4da80e0770d2ef52b8e543fb";
 var _branch = "try";
 var _patchdiffdata = null;
 var _bugData = null;
+var _baseLoc = location;
+var _curLoc = location;
 
 /* PageStore contains and dispatches update events when actions are run
  * this allows multiple components to listen for changes
@@ -51363,6 +51382,10 @@ var PageStore = Object.assign({}, _events.EventEmitter.prototype, {
 
   setChangeset: function setChangeset(changeset) {
     _changeset = changeset;
+  },
+
+  updateURL: function updateURL() {
+    window.history.pushState(null, "Coco", "index.html?changeset=" + _changeset + "&branch=" + _branch);
   },
 
   emitChange: function emitChange() {
