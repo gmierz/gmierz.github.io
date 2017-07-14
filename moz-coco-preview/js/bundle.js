@@ -49574,7 +49574,7 @@ var __allQueries = [];
 
 var StringManipulation = require('../StringManipulation');
 
-var randomVar_KEvYBFARX3 = [{
+var randomVar_2qzYM1LHYa = [{
   name: 'All Test Files',
   obj: {
     filter_revision: true,
@@ -49601,7 +49601,7 @@ var randomVar_KEvYBFARX3 = [{
   }
 }];
 
-__allQueries = __allQueries.concat(randomVar_KEvYBFARX3);
+__allQueries = __allQueries.concat(randomVar_2qzYM1LHYa);
 
 /*
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -49859,7 +49859,7 @@ var DiffInfoStore = _react2.default.createClass({
         null,
         _react2.default.createElement(
           _reactBootstrap.Form,
-          { horizontal: true },
+          null,
           _react2.default.createElement(
             _reactBootstrap.FormGroup,
             { controlId: 'changesetForm', validationState: this.getValidationState() },
