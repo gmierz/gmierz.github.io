@@ -49574,7 +49574,7 @@ var __allQueries = [];
 
 var StringManipulation = require('../StringManipulation');
 
-var randomVar_abHnxoLAqt = [{
+var randomVar_HD4i1s3maW = [{
   name: 'All Test Files',
   obj: {
     filter_revision: true,
@@ -49601,7 +49601,7 @@ var randomVar_abHnxoLAqt = [{
   }
 }];
 
-__allQueries = __allQueries.concat(randomVar_abHnxoLAqt);
+__allQueries = __allQueries.concat(randomVar_HD4i1s3maW);
 
 /*
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -50633,22 +50633,6 @@ var Sidebar = _react2.default.createClass({
                   'Coverage Patch Diff'
                 )
               )
-            ),
-            _react2.default.createElement(
-              _reactBootstrap.NavItem,
-              { onClick: function onClick() {
-                  _PageStore2.default.emitChange('sidebar_change');
-                  _PageStore2.default.emitChange('cocotable');
-                } },
-              _react2.default.createElement(
-                'div',
-                null,
-                _react2.default.createElement(
-                  'p',
-                  null,
-                  'Coverage Queries'
-                )
-              )
             )
           ),
           _react2.default.createElement(_InfoModal2.default, null)
@@ -51090,7 +51074,7 @@ var TopLevel = _react2.default.createClass({
       "sort": { "build.date": "desc" },
       "from": "coverage-summary",
       "limit": 1000,
-      "groupby": ["build.date", "build.revision12", "source.language"],
+      "groupby": ["build.date", "build.revision12"],
       "where": { "gte": { "build.date": { "date": "today-2month" } } },
       "format": "list"
     }, function (data) {
@@ -51110,6 +51094,7 @@ var TopLevel = _react2.default.createClass({
       }
 
       _this3.setState({ loading: false, start_state: true });
+      _PageActions2.default.toggleSidebar();
     });
   },
   componentWillUnmount: function componentWillUnmount() {
