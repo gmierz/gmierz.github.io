@@ -23,8 +23,19 @@
 		<a target="_blank" href="http://services.runescape.com/m=forum/forums.ws?75,76,387,65763383"> Vis Wax V4 </a>
 	</div>
 	<br>
-	<h2> Daily </h2>
 
+	<div>
+		<table class="clearer_daily">
+			<tr>
+				<td>
+					<h2> Daily </h2>
+				</td>
+				<td class="button_holder">
+					<button onclick="clearAllDaily()"> Clear All </button> 
+				</td>
+			</tr>
+		</table>
+	</div>
 	<div class="H1toH5" id="daily">
 	  <label>
 	    <input type="checkbox" id="entry" />
@@ -143,7 +154,18 @@
 	</div>
 	<br>
 
-	<h2> Weekly </h2>
+	<div>
+		<table class="clearer">
+			<tr>
+				<td>
+					<h2> Weekly </h2>
+				</td>
+				<td class="button_holder">
+					<button onclick="clearAllWeekly()"> Clear All </button> 
+				</td>
+			</tr>
+		</table>
+	</div>
 	<div class="H1toH5" style="width:50%" id="weekly">
 	  <label>
 	    <input type="checkbox" id="entry" />
@@ -172,7 +194,18 @@
 	</div>
 	<br>
 
-	<h2> Monthly </h2>
+	<div>
+		<table class="clearer">
+			<tr>
+				<td>
+					<h2> Monthly </h2>
+				</td>
+				<td class="button_holder">
+					<button onclick="clearAllMonthly()"> Clear All </button> 
+				</td>
+			</tr>
+		</table>
+	</div>
 	<div class="H1toH5" style="width:50%" id="monthly">
 	  <label>
 	    <input type="checkbox" id="entry" />
@@ -190,6 +223,24 @@
 </div>
 
 <script>
+	function clearAllDaily() {
+		$('#daily input:checkbox').each(function () {
+			$(this).prop('checked', false);
+		});
+	}
+
+	function clearAllWeekly() {
+		$('#weekly input:checkbox').each(function () {
+			$(this).prop('checked', false);
+		});
+	}
+
+	function clearAllMonthly() {
+		$('#monthly input:checkbox').each(function () {
+			$(this).prop('checked', false);
+		});
+	}
+
 	var daily_arr = [];
 	var weekly_arr = [];
 	var monthly_arr = [];
