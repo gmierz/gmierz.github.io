@@ -1,0 +1,6 @@
+html {background: lightgrey; }
+body { font-family:'Verdana', sans-serif; }
+#wrapper {width: 70%; margin: 0 auto; }
+.H1toH5 input { display: none; }
+.H1toH5 .seatButton { padding: 5px; height: 2em; border: 1px solid #ccc; background: white; }
+.H1toH5 input:checked + .seatButton { background: #79ff4d; }
