@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telemetry Alert Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Telemetry Alert Dashboard</h1>
+            <img src="mozilla-logo.png" alt="Mozilla Logo" class="logo">
+        </header>
+
+        <div class="controls">
+            <div class="stats">
+                <span id="alert-count">Total Alerts: 0</span>
+            </div>
+            <div class="toggle-container">
+                <button id="toggle-bugs" class="toggle-btn active">With Bugs</button>
+                <button id="toggle-no-bugs" class="toggle-btn">Without Bugs</button>
+                <button id="toggle-grouped" class="toggle-btn">Grouped</button>
+            </div>
+        </div>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label for="platform-filter">Platform:</label>
+                <div class="multi-select" id="platform-filter">
+                    <div class="select-header" id="platform-header">
+                        <span>All Platforms</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="select-dropdown" id="platform-dropdown"></div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label for="probe-filter">Probe (space-separated):</label>
+                <input type="text" id="probe-filter" class="text-filter" placeholder="e.g., memory cycle_collector">
+            </div>
+            <div class="filter-group">
+                <label for="date-from-filter">Push Date From:</label>
+                <input type="date" id="date-from-filter" class="date-filter">
+            </div>
+            <div class="filter-group">
+                <label for="date-to-filter">Push Date To:</label>
+                <input type="date" id="date-to-filter" class="date-filter">
+            </div>
+            <button id="toggle-grouped-bugs" class="toggle-btn" style="display: none;">With Bugs Only</button>
+            <button id="clear-filters" class="clear-btn">Clear Filters</button>
+        </div>
+
+        <table id="alerts-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th class="sortable" onclick="sortByColumn('alertId')">Alert ID</th>
+                    <th class="sortable" onclick="sortByColumn('bug')">Bug</th>
+                    <th class="sortable" onclick="sortByColumn('bugStatus')">Bug Status</th>
+                    <th class="sortable" onclick="sortByColumn('probe')">Probe</th>
+                    <th class="sortable" onclick="sortByColumn('platform')">Platform</th>
+                    <th class="sortable" onclick="sortByColumn('pushDate')">Push Date</th>
+                </tr>
+            </thead>
+            <tbody id="alerts-body">
+            </tbody>
+        </table>
+
+        <div id="loading" class="loading">Loading alerts...</div>
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
