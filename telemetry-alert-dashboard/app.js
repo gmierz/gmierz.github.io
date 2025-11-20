@@ -11,7 +11,8 @@ let currentFilters = {
     probeSearchTerms: [],
     groupedWithBugsOnly: false,
     dateFrom: null,
-    dateTo: null
+    dateTo: null,
+    alertSummaryId: null
 };
 let maxProbeLength = 0;
 let groupedSortColumn = 'summaryId'; // 'summaryId', 'count', 'mostRecent', or 'detectionDate'
@@ -136,6 +137,13 @@ function getFilteredAlerts() {
             }
 
             return true;
+        });
+    }
+
+    // Apply alert summary ID filter
+    if (currentFilters.alertSummaryId !== null) {
+        filtered = filtered.filter(alert => {
+            return alert.alertSummaryId === currentFilters.alertSummaryId;
         });
     }
 
@@ -303,13 +311,18 @@ function createDetailsRow(alert, rowId) {
         ? `<a href="${treeherderBase}${alert.newestPush}" target="_blank">${alert.newestPush}</a>`
         : 'N/A';
 
+    // Make alert summary ID a clickable link if not already filtered
+    const alertSummaryIdContent = currentFilters.alertSummaryId === null
+        ? `<a href="#" class="bug-link" onclick="event.stopPropagation(); applyAlertSummaryFilter(${alert.alertSummaryId}); return false;">${alert.alertSummaryId}</a>`
+        : alert.alertSummaryId;
+
     return `
         <tr class="details-row" id="details-${rowId}">
             <td colspan="7" class="details-cell">
                 <div class="details-content">
                     <div class="detail-item" style="grid-row: 1;">
                         <div class="detail-label">Alert Summary ID</div>
-                        <div class="detail-value">${alert.alertSummaryId}</div>
+                        <div class="detail-value">${alertSummaryIdContent}</div>
                     </div>
                     <div class="detail-item" style="grid-row: 1;">
                         <div class="detail-label">Created</div>
@@ -484,11 +497,19 @@ function renderGroupedAlerts(alerts) {
         const groupHeaderRow = document.createElement('tr');
         groupHeaderRow.className = 'main-row group-header';
         groupHeaderRow.onclick = () => toggleRow(groupRowId);
+
+        // Make summary ID a clickable link if not already filtered
+        const summaryIdLink = currentFilters.alertSummaryId === null
+            ? `<a href="#" class="bug-link" onclick="event.stopPropagation(); applyAlertSummaryFilter(${summaryId}); return false;">${summaryId}</a>`
+            : summaryId;
+
         groupHeaderRow.innerHTML = `
             <td>
                 <button class="expand-btn" id="expand-${groupRowId}">▶</button>
             </td>
-            <td><strong>${summaryId}</strong></td>
+            <td>
+                <strong>${summaryIdLink}</strong>
+            </td>
             <td>${count}</td>
             <td>${formatDate(mostRecentCreated)}</td>
             <td>${formatDate(detectionDate)}</td>
@@ -609,7 +630,7 @@ function updateTableHeaders() {
             <th></th>
             <th class="sortable" onclick="sortGroupedBy('summaryId')">Alert Summary ID</th>
             <th class="sortable" onclick="sortGroupedBy('count')">Alert Count</th>
-            <th class="sortable" onclick="sortGroupedBy('mostRecent')">Alert Last Created</th>
+            <th class="sortable" onclick="sortGroupedBy('mostRecent')">Last Alert Created On</th>
             <th class="sortable" onclick="sortGroupedBy('detectionDate')">Push Date</th>
         `;
         updateGroupedSortIndicators();
@@ -692,6 +713,13 @@ function updateURLParameter() {
         url.searchParams.delete('groupedWithBugsOnly');
     }
 
+    // Update alert summary ID parameter
+    if (currentFilters.alertSummaryId !== null) {
+        url.searchParams.set('alertSummaryId', currentFilters.alertSummaryId);
+    } else {
+        url.searchParams.delete('alertSummaryId');
+    }
+
     window.history.replaceState({}, '', url);
 }
 
@@ -734,6 +762,12 @@ function getFiltersFromURL() {
     const groupedWithBugsOnlyParam = urlParams.get('groupedWithBugsOnly');
     if (groupedWithBugsOnlyParam === 'true') {
         currentFilters.groupedWithBugsOnly = true;
+    }
+
+    // Get alert summary ID filter
+    const alertSummaryIdParam = urlParams.get('alertSummaryId');
+    if (alertSummaryIdParam) {
+        currentFilters.alertSummaryId = parseInt(alertSummaryIdParam, 10);
     }
 }
 
@@ -832,11 +866,20 @@ function setupFilters() {
         currentFilters.groupedWithBugsOnly = false;
         currentFilters.dateFrom = null;
         currentFilters.dateTo = null;
+        currentFilters.alertSummaryId = null;
         probeInput.value = '';
         dateFromInput.value = '';
         dateToInput.value = '';
         document.getElementById('toggle-grouped-bugs').classList.remove('active');
+        updateAlertSummaryDisplay();
         updateFilterDisplay();
+        updateView();
+    });
+
+    // Setup remove alert summary button
+    document.getElementById('remove-alert-summary').addEventListener('click', () => {
+        currentFilters.alertSummaryId = null;
+        updateAlertSummaryDisplay();
         updateView();
     });
 
@@ -991,8 +1034,31 @@ function updateFilterUIFromState() {
         groupedBugsBtn.classList.remove('active');
     }
 
+    // Update alert summary ID display
+    updateAlertSummaryDisplay();
+
     // Update filter display (for platform dropdown)
     updateFilterDisplay();
+}
+
+function updateAlertSummaryDisplay() {
+    const alertSummaryGroup = document.getElementById('alert-summary-filter-group');
+    const alertSummaryValue = document.getElementById('alert-summary-value');
+
+    if (currentFilters.alertSummaryId !== null) {
+        alertSummaryValue.textContent = currentFilters.alertSummaryId;
+        alertSummaryGroup.style.display = 'flex';
+    } else {
+        alertSummaryGroup.style.display = 'none';
+    }
+}
+
+function applyAlertSummaryFilter(alertSummaryId) {
+    if (currentFilters.alertSummaryId === null) {
+        currentFilters.alertSummaryId = alertSummaryId;
+        updateAlertSummaryDisplay();
+        updateView();
+    }
 }
 
 document.addEventListener('DOMContentLoaded', init);

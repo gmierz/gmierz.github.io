@@ -254,6 +254,41 @@ header h1 {
     color: #aaa;
 }
 
+.alert-summary-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    background: #f0f0ff;
+    border: 2px solid #667eea;
+    border-radius: 5px;
+}
+
+.alert-summary-display span {
+    font-weight: 600;
+    color: #667eea;
+}
+
+.remove-filter-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    transition: background-color 0.2s;
+}
+
+.remove-filter-btn:hover {
+    background: #5568d3;
+}
+
 .date-filter {
     padding: 10px 15px;
     border: 2px solid #ddd;
@@ -294,6 +329,12 @@ table {
     overflow: hidden;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     border-collapse: collapse;
+}
+
+/* Remove border radius from nested tables */
+.details-cell table {
+    border-radius: 0;
+    box-shadow: none;
 }
 
 thead {
@@ -339,6 +380,15 @@ thead th.sortable:hover {
 
 .details-cell table thead tr th:hover {
     background-color: #8b9ff5 !important;
+}
+
+/* Remove rounded corners from nested table headers */
+.details-cell table thead th:first-child {
+    border-top-left-radius: 0 !important;
+}
+
+.details-cell table thead th:last-child {
+    border-top-right-radius: 0 !important;
 }
 
 thead th.sortable::after {
