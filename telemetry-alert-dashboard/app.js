@@ -359,10 +359,18 @@ function createDetailsRow(alert, rowId) {
                             ${alert.pushRange ? `<a href="${alert.pushRange}" target="_blank">View on Treeherder</a>` : 'N/A'}
                         </div>
                     </div>
-                    <div class="detail-item cdf-chart-item" style="grid-column: 1 / -1; grid-row: 4;">
+                </div>
+                <div style="display: flex; gap: 16px; padding: 0 12px 12px;">
+                    <div class="cdf-chart-item" style="flex: 1; min-width: 0;">
                         <div class="detail-label">Distribution (CDF)</div>
-                        <div class="detail-value cdf-chart-wrapper">
+                        <div class="detail-value cdf-chart-wrapper" style="max-width: none;">
                             <canvas id="chart-${rowId}" data-probe="${alert.probe || ''}" height="200"></canvas>
+                        </div>
+                    </div>
+                    <div class="cdf-chart-item" style="flex: 1; min-width: 0;">
+                        <div class="detail-label">CDF Difference (After − Before)</div>
+                        <div class="detail-value cdf-chart-wrapper" style="max-width: none;">
+                            <canvas id="diff-chart-${rowId}" height="200"></canvas>
                         </div>
                     </div>
                 </div>
@@ -408,6 +416,111 @@ function normalizeTimeUnit(unit) {
 function convertFromNanoseconds(valueNs, unit) {
     const factors = { ns: 1, us: 1_000, ms: 1_000_000, s: 1_000_000_000 };
     return valueNs / (factors[unit] || 1);
+}
+
+function setupChartBehavior(canvas, isTouchDevice) {
+    canvas.style.touchAction = 'none';
+    canvas.addEventListener('dblclick', (e) => e.preventDefault());
+
+    const originalLimits = {
+        xMin: canvas._chartInstance.scales.x.options.min,
+        xMax: canvas._chartInstance.scales.x.options.max,
+        yMin: canvas._chartInstance.scales.y.options.min,
+        yMax: canvas._chartInstance.scales.y.options.max
+    };
+
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const chart = canvas._chartInstance;
+        if (!chart || chart === 'pending') return;
+
+        const xScale = chart.scales.x;
+        const yScale = chart.scales.y;
+        const rect = canvas.getBoundingClientRect();
+        const cursorX = e.clientX - rect.left;
+        const cursorY = e.clientY - rect.top;
+        const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+
+        const logMin = Math.log10(xScale.min);
+        const logMax = Math.log10(xScale.max);
+        const logCursor = Math.log10(Math.max(xScale.getValueForPixel(cursorX), 1e-10));
+        const logRange = logMax - logMin;
+        const newLogRange = logRange / factor;
+        const xFrac = logRange > 0 ? (logCursor - logMin) / logRange : 0.5;
+        xScale.options.min = Math.pow(10, logCursor - xFrac * newLogRange);
+        xScale.options.max = Math.pow(10, logCursor + (1 - xFrac) * newLogRange);
+
+        const yValue = yScale.getValueForPixel(cursorY);
+        const yRange = yScale.max - yScale.min;
+        const newYRange = yRange / factor;
+        const yFrac = yRange > 0 ? (yValue - yScale.min) / yRange : 0.5;
+        yScale.options.min = yValue - yFrac * newYRange;
+        yScale.options.max = yValue + (1 - yFrac) * newYRange;
+
+        chart.update('none');
+    }, { passive: false });
+
+    const resetBtn = document.createElement('button');
+    resetBtn.textContent = 'Reset Zoom';
+    resetBtn.className = 'reset-zoom-btn';
+    resetBtn.onclick = () => {
+        const chart = canvas._chartInstance;
+        if (!chart || chart === 'pending') return;
+        chart.scales.x.options.min = originalLimits.xMin;
+        chart.scales.x.options.max = originalLimits.xMax;
+        chart.scales.y.options.min = originalLimits.yMin;
+        chart.scales.y.options.max = originalLimits.yMax;
+        chart.update('default');
+    };
+    canvas.parentElement.appendChild(resetBtn);
+
+    const defaultHint = isTouchDevice
+        ? 'Drag to zoom · Pinch to zoom'
+        : 'Drag to zoom · Scroll to zoom · Double-click and hold to pan';
+    const hint = document.createElement('div');
+    hint.className = 'chart-hint';
+    hint.textContent = defaultHint;
+    canvas.parentElement.appendChild(hint);
+
+    if (!isTouchDevice) {
+        let lastDownTime = 0;
+        let isPanning = false;
+        let panStartX = 0;
+        let panStartY = 0;
+
+        canvas.addEventListener('mousedown', (e) => {
+            const now = Date.now();
+            if (now - lastDownTime < 300) {
+                isPanning = true;
+                panStartX = e.clientX;
+                panStartY = e.clientY;
+                canvas._chartInstance.options.plugins.zoom.zoom.drag.enabled = false;
+                canvas._chartInstance.update('none');
+                canvas.style.cursor = 'grabbing';
+                hint.textContent = 'Panning… release to stop';
+                e.preventDefault();
+            }
+            lastDownTime = now;
+        }, true);
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            const dx = e.clientX - panStartX;
+            const dy = e.clientY - panStartY;
+            canvas._chartInstance.pan({ x: dx, y: dy }, undefined, 'none');
+            panStartX = e.clientX;
+            panStartY = e.clientY;
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!isPanning) return;
+            isPanning = false;
+            canvas._chartInstance.options.plugins.zoom.zoom.drag.enabled = true;
+            canvas._chartInstance.update('none');
+            canvas.style.cursor = 'default';
+            hint.textContent = defaultHint;
+        });
+    }
 }
 
 async function renderCDFChart(canvasId) {
@@ -561,114 +674,84 @@ async function renderCDFChart(canvasId) {
         }
     });
 
-    // Disable double-tap zoom on mobile and double-click zoom on desktop.
-    currentCanvas.style.touchAction = 'none';
-    currentCanvas.addEventListener('dblclick', (e) => e.preventDefault());
+    setupChartBehavior(currentCanvas, isTouchDevice);
 
-    // Snapshot original limits immediately so reset always works regardless of
-    // how the user zoomed (wheel, pinch, or drag-box).
-    const originalLimits = {
-        xMin: currentCanvas._chartInstance.scales.x.options.min,
-        xMax: currentCanvas._chartInstance.scales.x.options.max,
-        yMin: currentCanvas._chartInstance.scales.y.options.min,
-        yMax: currentCanvas._chartInstance.scales.y.options.max
-    };
+    // Build diff points: after CDF minus before CDF at each bin
+    const diffPoints = beforePoints.map((pt, i) => ({ x: pt.x, y: afterPoints[i].y - pt.y }));
 
-    // The plugin's built-in wheel zoom uses linear math for the focal point,
-    // which is wrong on a log x-axis. This handler works in log10 space for x.
-    currentCanvas.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        const chart = currentCanvas._chartInstance;
-        if (!chart || chart === 'pending') return;
-
-        const xScale = chart.scales.x;
-        const yScale = chart.scales.y;
-        const rect = currentCanvas.getBoundingClientRect();
-        const cursorX = e.clientX - rect.left;
-        const cursorY = e.clientY - rect.top;
-        const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
-
-        // x-axis (logarithmic): work in log10 space so the focal point is correct
-        const logMin = Math.log10(xScale.min);
-        const logMax = Math.log10(xScale.max);
-        const logCursor = Math.log10(Math.max(xScale.getValueForPixel(cursorX), 1e-10));
-        const logRange = logMax - logMin;
-        const newLogRange = logRange / factor;
-        const xFrac = logRange > 0 ? (logCursor - logMin) / logRange : 0.5;
-        xScale.options.min = Math.pow(10, logCursor - xFrac * newLogRange);
-        xScale.options.max = Math.pow(10, logCursor + (1 - xFrac) * newLogRange);
-
-        // y-axis (linear): standard focal-point zoom
-        const yValue = yScale.getValueForPixel(cursorY);
-        const yRange = yScale.max - yScale.min;
-        const newYRange = yRange / factor;
-        const yFrac = yRange > 0 ? (yValue - yScale.min) / yRange : 0.5;
-        yScale.options.min = yValue - yFrac * newYRange;
-        yScale.options.max = yValue + (1 - yFrac) * newYRange;
-
-        chart.update('none');
-    }, { passive: false });
-
-    const resetBtn = document.createElement('button');
-    resetBtn.textContent = 'Reset Zoom';
-    resetBtn.className = 'reset-zoom-btn';
-    resetBtn.onclick = () => {
-        const chart = currentCanvas._chartInstance;
-        if (!chart || chart === 'pending') return;
-        chart.scales.x.options.min = originalLimits.xMin;
-        chart.scales.x.options.max = originalLimits.xMax;
-        chart.scales.y.options.min = originalLimits.yMin;
-        chart.scales.y.options.max = originalLimits.yMax;
-        chart.update('default');
-    };
-    currentCanvas.parentElement.appendChild(resetBtn);
-
-    const hint = document.createElement('div');
-    hint.className = 'chart-hint';
-    hint.textContent = 'Drag to zoom · Scroll to zoom · Double-click and hold to pan';
-    currentCanvas.parentElement.appendChild(hint);
-
-    if (!isTouchDevice) {
-        let lastDownTime = 0;
-        let isPanning = false;
-        let panStartX = 0;
-        let panStartY = 0;
-
-        // Capture phase runs before the zoom plugin's mousedown listener.
-        // Two presses within 300 ms with the second held → pan while held.
-        // preventDefault() suppresses the synthesized mousedown the plugin listens to.
-        currentCanvas.addEventListener('mousedown', (e) => {
-            const now = Date.now();
-            if (now - lastDownTime < 300) {
-                isPanning = true;
-                panStartX = e.clientX;
-                panStartY = e.clientY;
-                currentCanvas._chartInstance.options.plugins.zoom.zoom.drag.enabled = false;
-                currentCanvas._chartInstance.update('none');
-                currentCanvas.style.cursor = 'grabbing';
-                hint.textContent = 'Panning… release to stop';
-                e.preventDefault();
+    const diffCanvas = document.getElementById('diff-' + canvasId);
+    if (diffCanvas) {
+        diffCanvas._chartInstance = new Chart(diffCanvas, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'After − Before',
+                    data: diffPoints,
+                    borderColor: '#9b59b6',
+                    backgroundColor: 'rgba(155, 89, 182, 0.08)',
+                    borderWidth: 2,
+                    fill: false,
+                    pointRadius: 0,
+                    tension: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                animation: false,
+                plugins: {
+                    title: { display: false },
+                    legend: { display: true, position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            title: (items) => formatBinValue(items[0].parsed.x, timeUnit),
+                            label: (item) => `${item.dataset.label}: ${(item.parsed.y * 100).toFixed(2)}%`
+                        }
+                    },
+                    zoom: {
+                        zoom: {
+                            drag: {
+                                enabled: true,
+                                backgroundColor: 'rgba(74, 126, 255, 0.15)',
+                                borderColor: 'rgba(74, 126, 255, 0.8)',
+                                borderWidth: 1,
+                                threshold: 10
+                            },
+                            wheel: { enabled: false },
+                            pinch: { enabled: true },
+                            mode: 'xy'
+                        },
+                        pan: {
+                            enabled: isTouchDevice,
+                            mode: 'xy'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'logarithmic',
+                        title: {
+                            display: true,
+                            text: `Value (${timeUnit})`
+                        },
+                        ticks: {
+                            maxTicksLimit: 12,
+                            callback: (val) => formatBinValue(val, timeUnit)
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Difference (After − Before)'
+                        },
+                        ticks: {
+                            callback: (val) => `${(val * 100).toFixed(1)}%`
+                        }
+                    }
+                }
             }
-            lastDownTime = now;
-        }, true);
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isPanning) return;
-            const dx = e.clientX - panStartX;
-            const dy = e.clientY - panStartY;
-            currentCanvas._chartInstance.pan({ x: dx, y: dy }, undefined, 'none');
-            panStartX = e.clientX;
-            panStartY = e.clientY;
         });
 
-        document.addEventListener('mouseup', () => {
-            if (!isPanning) return;
-            isPanning = false;
-            currentCanvas._chartInstance.options.plugins.zoom.zoom.drag.enabled = true;
-            currentCanvas._chartInstance.update('none');
-            currentCanvas.style.cursor = 'default';
-            hint.textContent = 'Drag to zoom · Scroll to zoom · Double-click and hold to pan';
-        });
+        setupChartBehavior(diffCanvas, isTouchDevice);
     }
 }
 
