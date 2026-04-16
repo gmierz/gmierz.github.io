@@ -488,6 +488,9 @@ function setupChartBehavior(canvas, isTouchDevice) {
         let panStartX = 0;
         let panStartY = 0;
 
+        // Capture phase runs before the zoom plugin's mousedown listener.
+        // Two presses within 300 ms with the second held → pan while held.
+        // preventDefault() suppresses the synthesized mousedown the plugin listens to.
         canvas.addEventListener('mousedown', (e) => {
             const now = Date.now();
             if (now - lastDownTime < 300) {
@@ -499,6 +502,7 @@ function setupChartBehavior(canvas, isTouchDevice) {
                 canvas.style.cursor = 'grabbing';
                 hint.textContent = 'Panning… release to stop';
                 e.preventDefault();
+                e.stopPropagation();
             }
             lastDownTime = now;
         }, true);
