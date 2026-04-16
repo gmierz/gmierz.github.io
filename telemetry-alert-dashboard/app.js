@@ -519,7 +519,8 @@ async function renderCDFChart(canvasId) {
                             enabled: true,
                             backgroundColor: 'rgba(74, 126, 255, 0.15)',
                             borderColor: 'rgba(74, 126, 255, 0.8)',
-                            borderWidth: 1
+                            borderWidth: 1,
+                            threshold: 10
                         },
                         wheel: { enabled: false },
                         pinch: { enabled: true },
@@ -558,6 +559,10 @@ async function renderCDFChart(canvasId) {
             }
         }
     });
+
+    // Disable double-tap zoom on mobile and double-click zoom on desktop.
+    currentCanvas.style.touchAction = 'none';
+    currentCanvas.addEventListener('dblclick', (e) => e.preventDefault());
 
     // Snapshot original limits immediately so reset always works regardless of
     // how the user zoomed (wheel, pinch, or drag-box).
