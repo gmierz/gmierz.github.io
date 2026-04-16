@@ -476,35 +476,36 @@ function setupChartBehavior(canvas, isTouchDevice) {
 
     const defaultHint = isTouchDevice
         ? 'Drag to zoom · Pinch to zoom'
-        : 'Drag to zoom · Scroll to zoom · Double-click and hold to pan';
+        : 'Drag to zoom · Scroll to zoom · Right-click and drag to pan';
     const hint = document.createElement('div');
     hint.className = 'chart-hint';
     hint.textContent = defaultHint;
     canvas.parentElement.appendChild(hint);
 
     if (!isTouchDevice) {
-        let lastDownTime = 0;
         let isPanning = false;
+        let panButton = -1;
         let panStartX = 0;
         let panStartY = 0;
 
-        // Capture phase runs before the zoom plugin's mousedown listener.
-        // Two presses within 300 ms with the second held → pan while held.
-        // preventDefault() suppresses the synthesized mousedown the plugin listens to.
+        // Suppress the context menu so right-click can be used for panning
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
         canvas.addEventListener('mousedown', (e) => {
-            const now = Date.now();
-            if (now - lastDownTime < 300) {
-                isPanning = true;
-                panStartX = e.clientX;
-                panStartY = e.clientY;
-                canvas._chartInstance.options.plugins.zoom.zoom.drag.enabled = false;
-                canvas._chartInstance.update('none');
-                canvas.style.cursor = 'grabbing';
-                hint.textContent = 'Panning… release to stop';
-                e.preventDefault();
-                e.stopPropagation();
-            }
-            lastDownTime = now;
+            const isRightClick = e.button === 2;
+            const isShiftDrag = e.button === 0 && e.shiftKey;
+            if (!isRightClick && !isShiftDrag) return;
+
+            isPanning = true;
+            panButton = e.button;
+            panStartX = e.clientX;
+            panStartY = e.clientY;
+            canvas.style.cursor = 'grabbing';
+            hint.textContent = 'Panning… release to stop';
+            e.preventDefault();
+            // Shift+left-click: stop propagation so the zoom plugin doesn't
+            // also start a drag-zoom on the same mousedown.
+            if (isShiftDrag) e.stopPropagation();
         }, true);
 
         document.addEventListener('mousemove', (e) => {
@@ -516,11 +517,10 @@ function setupChartBehavior(canvas, isTouchDevice) {
             panStartY = e.clientY;
         });
 
-        document.addEventListener('mouseup', () => {
-            if (!isPanning) return;
+        document.addEventListener('mouseup', (e) => {
+            if (!isPanning || e.button !== panButton) return;
             isPanning = false;
-            canvas._chartInstance.options.plugins.zoom.zoom.drag.enabled = true;
-            canvas._chartInstance.update('none');
+            panButton = -1;
             canvas.style.cursor = 'default';
             hint.textContent = defaultHint;
         });
