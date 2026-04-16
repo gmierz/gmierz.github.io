@@ -538,6 +538,12 @@ tbody td.probe-cell {
     color: #333;
 }
 
+.chart-hint {
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: #999;
+}
+
 .bug-link {
     color: #667eea;
     text-decoration: none;
