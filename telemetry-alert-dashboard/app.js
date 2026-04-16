@@ -563,49 +563,54 @@ async function renderCDFChart(canvasId) {
     // wheel handler and can't rely on its internal reset mechanism.
     let originalLimits = null;
 
-    // The plugin's built-in wheel zoom uses linear math for the focal point,
-    // which is wrong on a log x-axis. This handler works in log10 space for x.
-    currentCanvas.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        const chart = currentCanvas._chartInstance;
-        if (!chart || chart === 'pending') return;
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-        const xScale = chart.scales.x;
-        const yScale = chart.scales.y;
+    if (!isTouchDevice) {
+        // The plugin's built-in wheel zoom uses linear math for the focal point,
+        // which is wrong on a log x-axis. This handler works in log10 space for x.
+        // Only applied on non-touch devices; mobile uses pinch (handled by the plugin).
+        currentCanvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const chart = currentCanvas._chartInstance;
+            if (!chart || chart === 'pending') return;
 
-        // Snapshot original limits on first zoom so reset can restore them
-        if (!originalLimits) {
-            originalLimits = {
-                xMin: xScale.options.min, xMax: xScale.options.max,
-                yMin: yScale.options.min, yMax: yScale.options.max
-            };
-        }
+            const xScale = chart.scales.x;
+            const yScale = chart.scales.y;
 
-        const rect = currentCanvas.getBoundingClientRect();
-        const cursorX = e.clientX - rect.left;
-        const cursorY = e.clientY - rect.top;
-        const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+            // Snapshot original limits on first zoom so reset can restore them
+            if (!originalLimits) {
+                originalLimits = {
+                    xMin: xScale.options.min, xMax: xScale.options.max,
+                    yMin: yScale.options.min, yMax: yScale.options.max
+                };
+            }
 
-        // x-axis (logarithmic): work in log10 space so the focal point is correct
-        const logMin = Math.log10(xScale.min);
-        const logMax = Math.log10(xScale.max);
-        const logCursor = Math.log10(Math.max(xScale.getValueForPixel(cursorX), 1e-10));
-        const logRange = logMax - logMin;
-        const newLogRange = logRange / factor;
-        const xFrac = logRange > 0 ? (logCursor - logMin) / logRange : 0.5;
-        xScale.options.min = Math.pow(10, logCursor - xFrac * newLogRange);
-        xScale.options.max = Math.pow(10, logCursor + (1 - xFrac) * newLogRange);
+            const rect = currentCanvas.getBoundingClientRect();
+            const cursorX = e.clientX - rect.left;
+            const cursorY = e.clientY - rect.top;
+            const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
 
-        // y-axis (linear): standard focal-point zoom
-        const yValue = yScale.getValueForPixel(cursorY);
-        const yRange = yScale.max - yScale.min;
-        const newYRange = yRange / factor;
-        const yFrac = yRange > 0 ? (yValue - yScale.min) / yRange : 0.5;
-        yScale.options.min = yValue - yFrac * newYRange;
-        yScale.options.max = yValue + (1 - yFrac) * newYRange;
+            // x-axis (logarithmic): work in log10 space so the focal point is correct
+            const logMin = Math.log10(xScale.min);
+            const logMax = Math.log10(xScale.max);
+            const logCursor = Math.log10(Math.max(xScale.getValueForPixel(cursorX), 1e-10));
+            const logRange = logMax - logMin;
+            const newLogRange = logRange / factor;
+            const xFrac = logRange > 0 ? (logCursor - logMin) / logRange : 0.5;
+            xScale.options.min = Math.pow(10, logCursor - xFrac * newLogRange);
+            xScale.options.max = Math.pow(10, logCursor + (1 - xFrac) * newLogRange);
 
-        chart.update('none');
-    }, { passive: false });
+            // y-axis (linear): standard focal-point zoom
+            const yValue = yScale.getValueForPixel(cursorY);
+            const yRange = yScale.max - yScale.min;
+            const newYRange = yRange / factor;
+            const yFrac = yRange > 0 ? (yValue - yScale.min) / yRange : 0.5;
+            yScale.options.min = yValue - yFrac * newYRange;
+            yScale.options.max = yValue + (1 - yFrac) * newYRange;
+
+            chart.update('none');
+        }, { passive: false });
+    }
 
     const resetBtn = document.createElement('button');
     resetBtn.textContent = 'Reset Zoom';
@@ -614,13 +619,17 @@ async function renderCDFChart(canvasId) {
         const chart = currentCanvas._chartInstance;
         if (!chart || chart === 'pending') return;
         if (originalLimits) {
+            // Restore snapshot taken before our custom wheel zoom
             chart.scales.x.options.min = originalLimits.xMin;
             chart.scales.x.options.max = originalLimits.xMax;
             chart.scales.y.options.min = originalLimits.yMin;
             chart.scales.y.options.max = originalLimits.yMax;
             originalLimits = null;
+            chart.update('default');
+        } else {
+            // No wheel zoom snapshot — let the plugin reset pinch/drag zoom
+            chart.resetZoom();
         }
-        chart.update('default');
     };
     currentCanvas.parentElement.appendChild(resetBtn);
 
