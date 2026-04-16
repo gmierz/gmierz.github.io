@@ -492,7 +492,9 @@ function setupChartBehavior(canvas, isTouchDevice) {
         canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
         canvas.addEventListener('mousedown', (e) => {
-            if (e.button !== 2) return;
+            const isRightClick = e.button === 2;
+            const isShiftDrag = e.button === 0 && e.shiftKey;
+            if (!isRightClick && !isShiftDrag) return;
 
             isPanning = true;
             panButton = e.button;
@@ -501,6 +503,9 @@ function setupChartBehavior(canvas, isTouchDevice) {
             canvas.style.cursor = 'grabbing';
             hint.textContent = 'Panning… release to stop';
             e.preventDefault();
+            // Shift+left-click: stop propagation so the zoom plugin doesn't
+            // also start a drag-zoom on the same mousedown.
+            if (isShiftDrag) e.stopPropagation();
         }, true);
 
         document.addEventListener('mousemove', (e) => {
