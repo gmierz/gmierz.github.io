@@ -511,6 +511,33 @@ tbody td.probe-cell {
     text-decoration: underline;
 }
 
+.cdf-chart-item {
+    padding: 12px;
+}
+
+.cdf-chart-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 700px;
+}
+
+.reset-zoom-btn {
+    display: block;
+    margin-top: 6px;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #555;
+}
+
+.reset-zoom-btn:hover {
+    background: #e0e0e0;
+    color: #333;
+}
+
 .bug-link {
     color: #667eea;
     text-decoration: none;
