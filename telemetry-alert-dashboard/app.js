@@ -470,6 +470,8 @@ async function renderCDFChart(canvasId) {
         afterPoints.push({ x, y: afterCdf[i] });
     }
 
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
     currentCanvas._chartInstance = new Chart(currentCanvas, {
         type: 'line',
         data: {
@@ -527,7 +529,7 @@ async function renderCDFChart(canvasId) {
                         mode: 'xy'
                     },
                     pan: {
-                        enabled: false,
+                        enabled: isTouchDevice,
                         mode: 'xy'
                     }
                 }
@@ -626,46 +628,48 @@ async function renderCDFChart(canvasId) {
     hint.textContent = 'Drag to zoom · Scroll to zoom · Double-click and hold to pan';
     currentCanvas.parentElement.appendChild(hint);
 
-    let lastDownTime = 0;
-    let isPanning = false;
-    let panStartX = 0;
-    let panStartY = 0;
+    if (!isTouchDevice) {
+        let lastDownTime = 0;
+        let isPanning = false;
+        let panStartX = 0;
+        let panStartY = 0;
 
-    // Capture phase runs before the zoom plugin's mousedown listener.
-    // Two presses within 300 ms with the second held → pan while held.
-    // preventDefault() suppresses the synthesized mousedown the plugin listens to.
-    currentCanvas.addEventListener('mousedown', (e) => {
-        const now = Date.now();
-        if (now - lastDownTime < 300) {
-            isPanning = true;
+        // Capture phase runs before the zoom plugin's mousedown listener.
+        // Two presses within 300 ms with the second held → pan while held.
+        // preventDefault() suppresses the synthesized mousedown the plugin listens to.
+        currentCanvas.addEventListener('mousedown', (e) => {
+            const now = Date.now();
+            if (now - lastDownTime < 300) {
+                isPanning = true;
+                panStartX = e.clientX;
+                panStartY = e.clientY;
+                currentCanvas._chartInstance.options.plugins.zoom.zoom.drag.enabled = false;
+                currentCanvas._chartInstance.update('none');
+                currentCanvas.style.cursor = 'grabbing';
+                hint.textContent = 'Panning… release to stop';
+                e.preventDefault();
+            }
+            lastDownTime = now;
+        }, true);
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            const dx = e.clientX - panStartX;
+            const dy = e.clientY - panStartY;
+            currentCanvas._chartInstance.pan({ x: dx, y: dy }, undefined, 'none');
             panStartX = e.clientX;
             panStartY = e.clientY;
-            currentCanvas._chartInstance.options.plugins.zoom.zoom.drag.enabled = false;
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!isPanning) return;
+            isPanning = false;
+            currentCanvas._chartInstance.options.plugins.zoom.zoom.drag.enabled = true;
             currentCanvas._chartInstance.update('none');
-            currentCanvas.style.cursor = 'grabbing';
-            hint.textContent = 'Panning… release to stop';
-            e.preventDefault();
-        }
-        lastDownTime = now;
-    }, true);
-
-    document.addEventListener('mousemove', (e) => {
-        if (!isPanning) return;
-        const dx = e.clientX - panStartX;
-        const dy = e.clientY - panStartY;
-        currentCanvas._chartInstance.pan({ x: dx, y: dy }, undefined, 'none');
-        panStartX = e.clientX;
-        panStartY = e.clientY;
-    });
-
-    document.addEventListener('mouseup', () => {
-        if (!isPanning) return;
-        isPanning = false;
-        currentCanvas._chartInstance.options.plugins.zoom.zoom.drag.enabled = true;
-        currentCanvas._chartInstance.update('none');
-        currentCanvas.style.cursor = 'default';
-        hint.textContent = 'Drag to zoom · Scroll to zoom · Double-click and hold to pan';
-    });
+            currentCanvas.style.cursor = 'default';
+            hint.textContent = 'Drag to zoom · Scroll to zoom · Double-click and hold to pan';
+        });
+    }
 }
 
 function getRowHTMLWithBug(alert, rowId, bugStatusClass) {
