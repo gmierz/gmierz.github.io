@@ -1489,4 +1489,46 @@ function applyAlertSummaryFilter(alertSummaryId) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', init);
+function updateChartColors(isDark) {
+    const textColor = isDark ? '#ccc' : '#666';
+    const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+    Chart.defaults.color = textColor;
+    Chart.defaults.borderColor = gridColor;
+    document.querySelectorAll('canvas').forEach(canvas => {
+        const chart = canvas._chartInstance;
+        if (!chart || chart === 'pending') return;
+        Object.values(chart.options.scales || {}).forEach(scale => {
+            scale.ticks = scale.ticks || {};
+            scale.ticks.color = textColor;
+            scale.title = scale.title || {};
+            scale.title.color = textColor;
+            scale.grid = scale.grid || {};
+            scale.grid.color = gridColor;
+        });
+        if (chart.options.plugins?.legend?.labels) {
+            chart.options.plugins.legend.labels.color = textColor;
+        }
+        chart.update('none');
+    });
+}
+
+function initDarkMode() {
+    const toggle = document.getElementById('dark-mode-toggle');
+    const isDark = localStorage.getItem('darkMode') === 'true';
+    if (isDark) {
+        document.body.classList.add('dark');
+        toggle.textContent = '\u2600 Light Mode';
+        updateChartColors(true);
+    }
+    toggle.addEventListener('click', () => {
+        const nowDark = document.body.classList.toggle('dark');
+        toggle.textContent = nowDark ? '\u2600 Light Mode' : '\u263E Dark Mode';
+        localStorage.setItem('darkMode', nowDark);
+        updateChartColors(nowDark);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initDarkMode();
+    init();
+});
