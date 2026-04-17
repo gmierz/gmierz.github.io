@@ -1516,12 +1516,12 @@ function initDarkMode() {
     const toggle = document.getElementById('dark-mode-toggle');
     const isDark = localStorage.getItem('darkMode') === 'true';
     if (isDark) {
-        document.body.classList.add('dark');
+        document.documentElement.classList.add('dark');
         toggle.textContent = '\u2600 Light Mode';
         updateChartColors(true);
     }
     toggle.addEventListener('click', () => {
-        const nowDark = document.body.classList.toggle('dark');
+        const nowDark = document.documentElement.classList.toggle('dark');
         toggle.textContent = nowDark ? '\u2600 Light Mode' : '\u263E Dark Mode';
         localStorage.setItem('darkMode', nowDark);
         updateChartColors(nowDark);
