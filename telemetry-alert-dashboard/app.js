@@ -347,6 +347,10 @@ function createDetailsRow(alert, rowId) {
                         <div class="detail-label">Created</div>
                         <div class="detail-value">${formatDate(alert.created)}</div>
                     </div>
+                    <div class="detail-item" style="grid-row: 1;">
+                        <div class="detail-label">Status</div>
+                        <div id="status-${rowId}" class="detail-value">Unknown</div>
+                    </div>
                     <div class="detail-item" style="grid-row: 2;">
                         <div class="detail-label">Detection Push</div>
                         <div class="detail-value">${detectionPushLink}</div>
@@ -359,7 +363,7 @@ function createDetailsRow(alert, rowId) {
                         <div class="detail-label">Newest Push</div>
                         <div class="detail-value">${newestPushLink}</div>
                     </div>
-                    <div class="detail-item" style="grid-column: 1 / -1; grid-row: 3;">
+                    <div class="detail-item" style="grid-row: 2;">
                         <div class="detail-label">Push Range</div>
                         <div class="detail-value">
                             ${alert.pushRange ? `<a href="${alert.pushRange}" target="_blank">View on Treeherder</a>` : 'N/A'}
@@ -542,6 +546,7 @@ async function renderCDFChart(canvasId) {
 
     const probe = canvas.dataset.probe;
     let timeUnit = 'ns';
+    let lowerIsBetter = null; // TODO: hardcoded for testing
 
     if (probe) {
         try {
@@ -551,6 +556,9 @@ async function renderCDFChart(canvasId) {
                 const metadata = await response.json();
                 if (metadata.time_unit) {
                     timeUnit = normalizeTimeUnit(metadata.time_unit);
+                }
+                if (metadata.monitor && typeof metadata.monitor === 'object' && 'lower_is_better' in metadata.monitor) {
+                    lowerIsBetter = metadata.monitor.lower_is_better;
                 }
             }
         } catch (e) {
@@ -662,7 +670,8 @@ async function renderCDFChart(canvasId) {
                     type: 'logarithmic',
                     title: {
                         display: true,
-                        text: `Value (${timeUnit})`
+                        text: `Value (${timeUnit})`,
+                        font: { size: 14 }
                     },
                     ticks: {
                         maxTicksLimit: 12,
@@ -674,7 +683,8 @@ async function renderCDFChart(canvasId) {
                     max: 1,
                     title: {
                         display: true,
-                        text: 'Cumulative Probability'
+                        text: 'Cumulative Probability',
+                        font: { size: 14 }
                     },
                     ticks: {
                         callback: (val) => `${(val * 100).toFixed(0)}%`
@@ -688,6 +698,22 @@ async function renderCDFChart(canvasId) {
 
     // Build diff points: after CDF minus before CDF at each bin
     const diffPoints = beforePoints.map((pt, i) => ({ x: pt.x, y: afterPoints[i].y - pt.y }));
+
+    const rowId = canvasId.slice('chart-'.length);
+    const statusEl = document.getElementById(`status-${rowId}`);
+    if (statusEl) {
+        const diffSum = diffPoints.reduce((sum, pt) => sum + pt.y, 0);
+        const isRegression = lowerIsBetter === null
+            ? null
+            : (diffSum < 0 && lowerIsBetter) || (diffSum >= 0 && !lowerIsBetter);
+        if (isRegression === null) {
+            statusEl.textContent = 'Unknown';
+            statusEl.className = 'detail-value';
+        } else {
+            statusEl.textContent = isRegression ? 'Regression' : 'Improvement';
+            statusEl.className = `detail-value cdf-status ${isRegression ? 'cdf-regression' : 'cdf-improvement'}`;
+        }
+    }
 
     const diffCanvas = document.getElementById('diff-' + canvasId);
     if (diffCanvas) {
@@ -741,7 +767,8 @@ async function renderCDFChart(canvasId) {
                         type: 'logarithmic',
                         title: {
                             display: true,
-                            text: `Value (${timeUnit})`
+                            text: `Value (${timeUnit})`,
+                            font: { size: 14 }
                         },
                         ticks: {
                             maxTicksLimit: 12,
@@ -751,7 +778,8 @@ async function renderCDFChart(canvasId) {
                     y: {
                         title: {
                             display: true,
-                            text: 'Difference (After − Before)'
+                            text: 'Difference (After − Before)',
+                            font: { size: 14 }
                         },
                         ticks: {
                             callback: (val) => `${(val * 100).toFixed(1)}%`
