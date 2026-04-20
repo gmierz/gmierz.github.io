@@ -8,8 +8,8 @@ let allAlerts = [];
 let alertsByRowId = {};
 let currentView = 'with-bugs'; // 'with-bugs', 'without-bugs', or 'grouped'
 let currentSort = {
-    column: null,
-    direction: 'asc' // 'asc' or 'desc'
+    column: 'pushDate',
+    direction: 'desc' // 'asc' or 'desc'
 };
 let currentFilters = {
     platforms: new Set(),
@@ -20,7 +20,7 @@ let currentFilters = {
     alertSummaryId: null
 };
 let maxProbeLength = 0;
-let groupedSortColumn = 'summaryId'; // 'summaryId', 'count', 'mostRecent', or 'detectionDate'
+let groupedSortColumn = 'detectionDate'; // 'summaryId', 'count', 'mostRecent', or 'detectionDate'
 let groupedSortDirection = 'desc'; // 'asc' or 'desc' for grouped view
 
 window.mobileCheck = function() {
