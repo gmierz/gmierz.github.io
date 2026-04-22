@@ -1156,6 +1156,18 @@ function updateView() {
     updateTableHeaders();
     const filteredAlerts = getFilteredAlerts();
     renderAlerts(filteredAlerts);
+
+    if (currentFilters.alertId !== null && filteredAlerts.length === 1) {
+        if (currentView !== 'grouped') {
+            toggleRow('row-0');
+        } else {
+            const summaryId = filteredAlerts[0].alertSummaryId;
+            const groupRowId = `group-${summaryId}`;
+            toggleRow(groupRowId);
+            toggleRow(`${groupRowId}-alert-0`);
+        }
+    }
+
     updateURLParameter();
 }
 
