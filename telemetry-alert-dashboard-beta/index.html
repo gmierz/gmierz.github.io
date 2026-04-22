@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telemetry Alert Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script>if (localStorage.getItem('darkMode') === 'true') document.documentElement.classList.add('dark');</script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-title">
+                <h1>Telemetry Alert Dashboard</h1>
+                <div class="header-controls">
+                    <button id="dark-mode-toggle" class="dark-mode-btn">&#9790; Dark Mode</button>
+                    <a href="https://firefox-source-docs.mozilla.org/testing/perfdocs/telemetry-alerting.html" target="_blank" class="help-icon" title="Documentation">&#63;</a>
+                    <a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Testing&amp;component=Performance&amp;status_whiteboard=[fxp]" target="_blank" class="bugzilla-link" title="File a bug">
+                        <img src="bugzilla_favicon.ico" alt="Bugzilla" width="16" height="16">
+                    </a>
+                    <a href="https://github.com/gmierz/mozdetect" target="_blank" class="bugzilla-link" title="MozDetect on GitHub">
+                        <img src="github_favicon.ico" alt="GitHub" width="16" height="16">
+                    </a>
+                </div>
+            </div>
+            <img src="mozilla-logo.png" alt="Mozilla Logo" class="logo">
+        </header>
+
+        <div class="info-section">
+            <p>This dashboard provides information about all the telemetry alerts we have in our database. New alerts are generated on a daily basis in the evening (6PM EST).</p>
+            <p>For more information, see the <a href="https://firefox-source-docs.mozilla.org/testing/perfdocs/telemetry-alerting.html" target="_blank" class="doc-link">telemetry alerting documentation</a>.</p>
+        </div>
+
+        <div class="controls">
+            <div class="stats">
+                <span id="alert-count">Total Alerts: 0</span>
+            </div>
+            <div class="toggle-container">
+                <button id="toggle-bugs" class="toggle-btn active">With Bugs</button>
+                <button id="toggle-no-bugs" class="toggle-btn">Without Bugs</button>
+                <button id="toggle-grouped" class="toggle-btn">Grouped</button>
+            </div>
+        </div>
+
+        <div class="filters">
+            <div class="filter-group" id="alert-summary-filter-group" style="display: none;">
+                <label>Alert Summary ID:</label>
+                <div class="alert-summary-display">
+                    <span id="alert-summary-value"></span>
+                    <button id="remove-alert-summary" class="remove-filter-btn">✕</button>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label for="platform-filter">Platform:</label>
+                <div class="multi-select" id="platform-filter">
+                    <div class="select-header" id="platform-header">
+                        <span>All Platforms</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="select-dropdown" id="platform-dropdown"></div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label for="probe-filter">Probe (space-separated):</label>
+                <input type="text" id="probe-filter" class="text-filter" placeholder="e.g., memory cycle_collector">
+            </div>
+            <div class="filter-group">
+                <label for="date-from-filter">Push Date From:</label>
+                <input type="date" id="date-from-filter" class="date-filter">
+            </div>
+            <div class="filter-group">
+                <label for="date-to-filter">Push Date To:</label>
+                <input type="date" id="date-to-filter" class="date-filter">
+            </div>
+            <button id="toggle-grouped-bugs" class="toggle-btn" style="display: none;">With Bugs Only</button>
+            <button id="clear-filters" class="clear-btn">Clear Filters</button>
+        </div>
+
+        <table id="alerts-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th class="sortable" onclick="sortByColumn('alertId')">Alert ID</th>
+                    <th class="sortable" onclick="sortByColumn('bug')">Bug</th>
+                    <th class="sortable" onclick="sortByColumn('bugStatus')">Bug Status</th>
+                    <th class="sortable" onclick="sortByColumn('probe')">Probe</th>
+                    <th class="sortable" onclick="sortByColumn('platform')">Platform</th>
+                    <th class="sortable" onclick="sortByColumn('pushDate')">Push Date</th>
+                </tr>
+            </thead>
+            <tbody id="alerts-body">
+            </tbody>
+        </table>
+
+        <div id="loading" class="loading">Loading alerts...</div>
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
