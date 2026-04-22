@@ -17,7 +17,8 @@ let currentFilters = {
     groupedWithBugsOnly: false,
     dateFrom: null,
     dateTo: null,
-    alertSummaryId: null
+    alertSummaryId: null,
+    alertId: null
 };
 let maxProbeLength = 0;
 let groupedSortColumn = 'detectionDate'; // 'summaryId', 'count', 'mostRecent', or 'detectionDate'
@@ -175,6 +176,13 @@ function getFilteredAlerts() {
     if (currentFilters.alertSummaryId !== null) {
         filtered = filtered.filter(alert => {
             return alert.alertSummaryId === currentFilters.alertSummaryId;
+        });
+    }
+
+    // Apply alert ID filter
+    if (currentFilters.alertId !== null) {
+        filtered = filtered.filter(alert => {
+            return alert.alertId === currentFilters.alertId;
         });
     }
 
@@ -831,11 +839,15 @@ function getRowHTMLWithBug(alert, rowId, bugStatusClass) {
               onclick="event.stopPropagation()">${alert.probe}</a>${' '.repeat(maxProbeLength - alert.probe.length)}`
         : padProbe(null);
 
+    const alertIdContent = currentFilters.alertId === null
+        ? `<a href="#" class="bug-link" onclick="event.stopPropagation(); applyAlertIdFilter(${alert.alertId}); return false;">${alert.alertId}</a>`
+        : alert.alertId;
+
     return `
         <td>
             <button class="expand-btn" id="expand-${rowId}">▶</button>
         </td>
-        <td>${alert.alertId}</td>
+        <td>${alertIdContent}</td>
         <td>
             <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=${alert.bug}"
                target="_blank"
@@ -859,11 +871,15 @@ function getRowHTMLWithoutBug(alert, rowId) {
               onclick="event.stopPropagation()">${alert.probe}</a>${' '.repeat(maxProbeLength - alert.probe.length)}`
         : padProbe(null);
 
+    const alertIdContent = currentFilters.alertId === null
+        ? `<a href="#" class="bug-link" onclick="event.stopPropagation(); applyAlertIdFilter(${alert.alertId}); return false;">${alert.alertId}</a>`
+        : alert.alertId;
+
     return `
         <td>
             <button class="expand-btn" id="expand-${rowId}">▶</button>
         </td>
-        <td>${alert.alertId}</td>
+        <td>${alertIdContent}</td>
         <td class="probe-cell">${probeContent}</td>
         <td>${alert.platform}</td>
         <td>${formatDate(alert.pushDate)}</td>
@@ -1011,13 +1027,17 @@ function renderGroupedAlerts(alerts) {
                       onclick="event.stopPropagation()">${alert.probe}</a>${' '.repeat(maxProbeLength - alert.probe.length)}`
                 : padProbe(null);
 
+            const nestedAlertIdContent = currentFilters.alertId === null
+                ? `<a href="#" class="bug-link" onclick="event.stopPropagation(); applyAlertIdFilter(${alert.alertId}); return false;">${alert.alertId}</a>`
+                : alert.alertId;
+
             // Main row for this alert
             detailsHTML += `
                 <tr class="main-row" onclick="toggleRow('${nestedRowId}')" style="border-bottom: 1px solid #e0e0e0;">
                     <td style="padding: 8px 12px; width: 40px;">
                         <button class="expand-btn" id="expand-${nestedRowId}">▶</button>
                     </td>
-                    <td style="padding: 8px 12px;">${alert.alertId}</td>
+                    <td style="padding: 8px 12px;">${nestedAlertIdContent}</td>
                     <td style="padding: 8px 12px;">
                         ${alert.bug ? `<a href="https://bugzilla.mozilla.org/show_bug.cgi?id=${alert.bug}" target="_blank" class="bug-link" onclick="event.stopPropagation()">${alert.bug}</a>` : 'N/A'}
                     </td>
@@ -1184,6 +1204,13 @@ function updateURLParameter() {
         url.searchParams.delete('alertSummaryId');
     }
 
+    // Update alert ID parameter
+    if (currentFilters.alertId !== null) {
+        url.searchParams.set('alertId', currentFilters.alertId);
+    } else {
+        url.searchParams.delete('alertId');
+    }
+
     window.history.replaceState({}, '', url);
 }
 
@@ -1232,6 +1259,12 @@ function getFiltersFromURL() {
     const alertSummaryIdParam = urlParams.get('alertSummaryId');
     if (alertSummaryIdParam) {
         currentFilters.alertSummaryId = parseInt(alertSummaryIdParam, 10);
+    }
+
+    // Get alert ID filter
+    const alertIdParam = urlParams.get('alertId');
+    if (alertIdParam) {
+        currentFilters.alertId = parseInt(alertIdParam, 10);
     }
 }
 
@@ -1331,11 +1364,13 @@ function setupFilters() {
         currentFilters.dateFrom = null;
         currentFilters.dateTo = null;
         currentFilters.alertSummaryId = null;
+        currentFilters.alertId = null;
         probeInput.value = '';
         dateFromInput.value = '';
         dateToInput.value = '';
         document.getElementById('toggle-grouped-bugs').classList.remove('active');
         updateAlertSummaryDisplay();
+        updateAlertIdDisplay();
         updateFilterDisplay();
         updateView();
     });
@@ -1344,6 +1379,13 @@ function setupFilters() {
     document.getElementById('remove-alert-summary').addEventListener('click', () => {
         currentFilters.alertSummaryId = null;
         updateAlertSummaryDisplay();
+        updateView();
+    });
+
+    // Setup remove alert ID button
+    document.getElementById('remove-alert-id').addEventListener('click', () => {
+        currentFilters.alertId = null;
+        updateAlertIdDisplay();
         updateView();
     });
 
@@ -1501,6 +1543,9 @@ function updateFilterUIFromState() {
     // Update alert summary ID display
     updateAlertSummaryDisplay();
 
+    // Update alert ID display
+    updateAlertIdDisplay();
+
     // Update filter display (for platform dropdown)
     updateFilterDisplay();
 }
@@ -1521,6 +1566,26 @@ function applyAlertSummaryFilter(alertSummaryId) {
     if (currentFilters.alertSummaryId === null) {
         currentFilters.alertSummaryId = alertSummaryId;
         updateAlertSummaryDisplay();
+        updateView();
+    }
+}
+
+function updateAlertIdDisplay() {
+    const alertIdGroup = document.getElementById('alert-id-filter-group');
+    const alertIdValue = document.getElementById('alert-id-value');
+
+    if (currentFilters.alertId !== null) {
+        alertIdValue.textContent = currentFilters.alertId;
+        alertIdGroup.style.display = 'flex';
+    } else {
+        alertIdGroup.style.display = 'none';
+    }
+}
+
+function applyAlertIdFilter(alertId) {
+    if (currentFilters.alertId === null) {
+        currentFilters.alertId = alertId;
+        updateAlertIdDisplay();
         updateView();
     }
 }
