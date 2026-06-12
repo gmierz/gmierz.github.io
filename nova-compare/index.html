@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Compare Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Nova Compare Dashboard</h1>
+            <p class="subtitle">
+                Each chart compares a <strong>nova</strong> performance signature
+                against its <strong>opposite</strong> (same suite/test/platform/options,
+                minus the nova flag). Opposite data is clipped to start at the nova
+                signature's earliest data point.
+            </p>
+        </header>
+
+        <div class="controls">
+            <label>Repo
+                <input id="repo-input" type="text" value="mozilla-central">
+            </label>
+            <label>Framework(s)
+                <input id="framework-input" type="text" placeholder="e.g. 1 (blank = all)">
+            </label>
+            <label>Interval (days)
+                <input id="interval-input" type="number" value="30" min="1">
+            </label>
+            <label class="checkbox" title="Replicate values only exist on subtest signatures; enabling this auto-shows subtests.">
+                <input id="replicates-input" type="checkbox">
+                Query replicates
+            </label>
+            <button id="run-btn">Run query</button>
+
+            <label class="grow">Filter
+                <input id="filter-input" type="text" placeholder="suite, test, platform, or option...">
+            </label>
+            <label>Min nova points
+                <input id="min-points" type="number" value="0" min="0" style="width:5rem">
+            </label>
+            <label class="checkbox">
+                <input id="include-subtests" type="checkbox">
+                Include subtests
+            </label>
+            <label>Sort by
+                <select id="sort-select">
+                    <option value="abs-desc">% diff (largest first)</option>
+                    <option value="desc">% diff (high → low)</option>
+                    <option value="asc">% diff (low → high)</option>
+                    <option value="platform">Platform</option>
+                    <option value="none">Default order</option>
+                </select>
+            </label>
+            <label>Chart type
+                <select id="chart-type-select">
+                    <option value="scatter">Scatter</option>
+                    <option value="line">Line</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="statusbar">
+            <span id="pair-count">0 pairs</span>
+            <span id="status"></span>
+        </div>
+
+        <div id="grid" class="grid"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <script src="query.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

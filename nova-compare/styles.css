@@ -1,0 +1,182 @@
+:root {
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --border: #e1e4e8;
+  --text: #24292e;
+  --muted: #6a737d;
+  --accent: #0d6efd;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+
+header h1 { margin: 0 0 0.25rem; font-size: 1.6rem; }
+.subtitle { margin: 0 0 1rem; color: var(--muted); max-width: 70ch; line-height: 1.4; }
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.controls label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.78rem;
+  color: var(--muted);
+  gap: 0.25rem;
+}
+.controls label.grow { flex: 1 1 240px; }
+.controls label.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text);
+}
+.controls label.checkbox input { width: auto; }
+
+.controls input,
+.controls select {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fff;
+  color: var(--text);
+}
+
+.live-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+.live-controls.hidden { display: none; }
+
+button {
+  padding: 0.45rem 0.9rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.5; cursor: default; }
+
+.statusbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0.75rem 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+#status.error { color: #d63384; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 1rem;
+}
+
+.empty { color: var(--muted); padding: 2rem; text-align: center; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+.card-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badge {
+  flex: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 10px;
+}
+.badge.up { background: #fde2e7; color: #d63384; }
+.badge.down { background: #d8f3e3; color: #1a7f47; }
+.badge.flat { background: #eceff1; color: var(--muted); }
+
+/* Prominent, color-coded platform pill for at-a-glance OS recognition. */
+.platform {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  margin-top: 0.35rem;
+  padding: 0.12rem 0.4rem;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-left-width: 3px;
+  max-width: 100%;
+}
+.platform-icon { font-size: 0.85rem; line-height: 1; }
+.platform-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.platform.os-linux   { background: #fff4e5; border-color: #f0a020; color: #8a5300; }
+.platform.os-windows { background: #e7f1ff; border-color: #0d6efd; color: #0a4bb3; }
+.platform.os-macos   { background: #f0eef5; border-color: #6c5ce7; color: #4a3aa8; }
+.platform.os-android { background: #e6f6ec; border-color: #1a7f47; color: #115c33; }
+.platform.os-other   { background: #eceff1; border-color: #90a4ae; color: #455a64; }
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+.card-meta.sub { font-style: italic; }
+
+.chart-wrap { position: relative; height: 220px; margin: 0.5rem 0; }
+
+.card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  font-size: 0.7rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  padding-top: 0.4rem;
+}
