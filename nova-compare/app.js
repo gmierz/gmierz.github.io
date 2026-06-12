@@ -64,8 +64,10 @@ function applyFilter() {
   const minPts = parseInt(els.minPoints.value, 10) || 0;
   const includeSubtests = els.includeSubtests.checked;
   filtered = allPairs.filter((p) => {
-    // A subtest is any signature with a non-empty `test` field.
-    if (!includeSubtests && p.test) return false;
+    // A "real" subtest has a non-empty `test` AND a suite-level summary for its
+    // suite. A test with no suite-level equivalent is standalone, so it's always
+    // shown regardless of the subtests toggle.
+    if (!includeSubtests && p.has_suite_level) return false;
     if (p.nova_datum_count < minPts) return false;
     if (!term) return true;
     const hay = `${p.suite} ${p.test} ${p.machine_platform} ${(

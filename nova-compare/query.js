@@ -146,6 +146,31 @@ function matchKey(props, extraOptions) {
   ]);
 }
 
+// Identity of a signature's *suite-level* summary, ignoring the `test` field.
+// Two signatures share this key when they belong to the same suite for the same
+// platform/options/application/framework — i.e. a subtest and its suite summary.
+function suiteLevelKey(props) {
+  return JSON.stringify([
+    props.framework_id ?? null,
+    props.machine_platform ?? null,
+    props.option_collection_hash ?? null,
+    props.suite ?? null,
+    props.application ?? "",
+    [...(props.extra_options || [])].sort(),
+  ]);
+}
+
+// Build the set of suite-level identities that actually exist as their own
+// signature (test == ""). A subtest whose suite has no such summary signature
+// is a standalone test, not a real subtest.
+function suiteLevelSet(signatures) {
+  const set = new Set();
+  for (const props of Object.values(signatures)) {
+    if (!props.test) set.add(suiteLevelKey(props));
+  }
+  return set;
+}
+
 function buildPairs(signatures) {
   // Return [{novaId, novaProps, oppId, oppProps}, ...].
   // Index every signature by its full identity for O(1) opposite lookup.
@@ -184,6 +209,7 @@ async function runNovaQuery(opts = {}) {
   status(`${Object.keys(signatures).length} signatures total`);
 
   const pairs = buildPairs(signatures);
+  const suiteLevels = suiteLevelSet(signatures);
   status(`${pairs.length} nova/opposite pairs`);
   if (pairs.length === 0) return [];
 
@@ -218,6 +244,9 @@ async function runNovaQuery(opts = {}) {
       opposite_extra_options: oppProps.extra_options,
       suite: novaProps.suite,
       test: novaProps.test || "",
+      // A subtest is only a "real" subtest if its suite has a suite-level
+      // summary signature too; otherwise it's a standalone test.
+      has_suite_level: !!novaProps.test && suiteLevels.has(suiteLevelKey(novaProps)),
       machine_platform: novaProps.machine_platform,
       framework_id: novaProps.framework_id,
       nova_start_date: novaStart,
