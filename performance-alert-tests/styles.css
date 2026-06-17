@@ -1,0 +1,174 @@
+:root {
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --border: #e1e4e8;
+  --text: #24292e;
+  --muted: #6a737d;
+  --accent: #0d6efd;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+
+header h1 { margin: 0 0 0.25rem; font-size: 1.6rem; }
+.subtitle { margin: 0 0 1rem; color: var(--muted); max-width: 80ch; line-height: 1.4; }
+.subtitle a { color: var(--accent); }
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.controls label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.78rem;
+  color: var(--muted);
+  gap: 0.25rem;
+}
+.controls label.grow { flex: 1 1 240px; }
+
+.controls input,
+.controls select {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fff;
+  color: var(--text);
+}
+
+button {
+  padding: 0.45rem 0.9rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.5; cursor: default; }
+
+.statusbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0.75rem 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+#status.error { color: #d63384; }
+
+.empty { color: var(--muted); padding: 2rem; text-align: center; }
+.hidden { display: none; }
+
+.detail {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+}
+
+.detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.detail-title { font-weight: 600; font-size: 1.15rem; }
+.detail-links { display: flex; gap: 0.9rem; justify-content: flex-end; flex-wrap: wrap; }
+.detail-links a { color: var(--accent); font-size: 0.85rem; text-decoration: none; cursor: pointer; }
+.detail-links a:hover { text-decoration: underline; }
+
+.platform {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  padding: 0.12rem 0.4rem;
+  border-radius: 5px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-left-width: 3px;
+  max-width: 100%;
+}
+.platform:empty { display: none; }
+.platform-icon { font-size: 0.85rem; line-height: 1; }
+.platform-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.platform.os-linux   { background: #fff4e5; border-color: #f0a020; color: #8a5300; }
+.platform.os-windows { background: #e7f1ff; border-color: #0d6efd; color: #0a4bb3; }
+.platform.os-macos   { background: #f0eef5; border-color: #6c5ce7; color: #4a3aa8; }
+.platform.os-android { background: #e6f6ec; border-color: #1a7f47; color: #115c33; }
+.platform.os-other   { background: #eceff1; border-color: #90a4ae; color: #455a64; }
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  font-size: 0.74rem;
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
+
+.chart-wrap { position: relative; height: 460px; margin: 0.75rem 0 0.25rem; }
+
+.alert-note { font-size: 0.78rem; color: #b9770e; margin: 0.25rem 0 0.5rem; }
+.alert-note:empty { display: none; }
+
+.table-wrap { overflow-x: auto; margin-top: 0.5rem; }
+.alert-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.alert-table th,
+.alert-table td {
+  text-align: left;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.alert-table th { color: var(--muted); font-weight: 600; }
+.alert-table td.method {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dir { font-weight: 600; }
+.dir.reg { color: #d63384; }
+.dir.imp { color: #1a7f47; }
+
+.alert-link { color: var(--accent); text-decoration: none; font-variant-numeric: tabular-nums; }
+.alert-link:hover { text-decoration: underline; }
+.copy-link {
+  padding: 0.05rem 0.3rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+.copy-link:hover { background: #f0f3f6; }
+
+/* Linked alert: persistent highlight plus a brief flash when jumped to. */
+.alert-table tr.focused { background: #fff8e6; }
+.alert-table tr.flash { animation: flash 2s ease-out; }
+@keyframes flash {
+  0% { background: #ffe9a8; }
+  100% { background: transparent; }
+}

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telemetry Alert Tests Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Telemetry Alert Tests</h1>
+            <p class="subtitle">
+                Telemetry alerts from
+                <a href="https://sql.telemetry.mozilla.org/queries/117898" target="_blank" rel="noopener">redash query 117898</a>
+                plotted on top of their underlying Treeherder performance series.
+                Pick a test below to see its time-series with each alert location
+                marked on the chart.
+            </p>
+        </header>
+
+        <div class="controls">
+            <label class="grow">Test
+                <select id="test-select" disabled>
+                    <option value="">Loading alerts…</option>
+                </select>
+            </label>
+            <label class="grow">Filter tests
+                <input id="filter-input" type="text" placeholder="repo, signature id, suite, test, platform…" disabled>
+            </label>
+            <label>Sort by
+                <select id="sort-select">
+                    <option value="amount-desc">Largest change %</option>
+                    <option value="alerts-desc">Most alerts</option>
+                    <option value="recent">Most recent alert</option>
+                    <option value="sig">Signature id</option>
+                </select>
+            </label>
+            <label>Interval (days)
+                <input id="interval-input" type="number" value="90" min="1" style="width:5rem">
+            </label>
+            <label>Chart type
+                <select id="chart-type-select">
+                    <option value="line">Line</option>
+                    <option value="scatter">Scatter</option>
+                </select>
+            </label>
+            <button id="reload-btn" title="Re-fetch the alert rows from redash">Reload alerts</button>
+            <button id="names-btn" disabled title="Fetch suite/test/platform names for every test so you can search by name">Load test names</button>
+        </div>
+
+        <div class="statusbar">
+            <span id="test-count">—</span>
+            <span id="status"></span>
+        </div>
+
+        <div id="detail" class="detail hidden">
+            <div class="detail-head">
+                <div>
+                    <div id="detail-title" class="detail-title"></div>
+                    <div id="detail-platform" class="platform"></div>
+                </div>
+                <div id="detail-links" class="detail-links"></div>
+            </div>
+            <div id="detail-meta" class="card-meta"></div>
+            <div class="chart-wrap"><canvas id="chart"></canvas></div>
+            <div id="alert-note" class="alert-note"></div>
+            <div class="table-wrap">
+                <table id="alert-table" class="alert-table">
+                    <thead>
+                        <tr>
+                            <th>Alert id</th>
+                            <th>Created</th>
+                            <th>Push</th>
+                            <th>Change</th>
+                            <th>Prev → New</th>
+                            <th>Dir</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>Link</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <p id="placeholder" class="empty">Select a test from the dropdown to view its data.</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <script src="query.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
