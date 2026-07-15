@@ -588,6 +588,11 @@ tbody td.probe-cell {
     max-width: 700px;
 }
 
+.cdf-canvas-box {
+    position: relative;
+    width: 100%;
+}
+
 .cdf-status {
     font-weight: 600;
     font-size: 0.9rem;
@@ -609,11 +614,23 @@ tbody td.probe-cell {
     border: 1px solid rgba(40, 167, 69, 0.4);
 }
 
+.chart-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 6px;
+    margin-bottom: 8px;
+}
+
+.chart-controls .reset-zoom-btn {
+    margin-top: 0;
+}
+
 .reset-zoom-btn {
     display: block;
     margin-top: 6px;
-    padding: 4px 12px;
-    font-size: 0.8rem;
+    padding: 2px 8px;
+    font-size: 0.7rem;
     background: #f0f0f0;
     border: 1px solid #ccc;
     border-radius: 4px;
@@ -628,6 +645,7 @@ tbody td.probe-cell {
 
 .chart-hint {
     margin-top: 4px;
+    margin-bottom: 8px;
     font-size: 0.75rem;
     color: #999;
 }

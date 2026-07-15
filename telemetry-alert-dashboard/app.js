@@ -1,8 +1,84 @@
 const API_URL = 'https://sql.telemetry.mozilla.org/api/queries/108351/results.json?api_key=cu3eqD40BhCbwPJ8KfQ7NHCueftTpnIvJcdRVo7a';
 
+// Shared floating tooltip for the percentile labels below the chart.
+function getPercentileTooltip() {
+    let el = document.getElementById('percentile-label-tooltip');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'percentile-label-tooltip';
+        el.style.cssText = 'position:fixed;z-index:9999;pointer-events:none;display:none;' +
+            'background:rgba(0,0,0,0.85);color:#fff;font:12px sans-serif;padding:4px 8px;' +
+            'border-radius:4px;white-space:nowrap;transform:translate(-50%,-100%);';
+        document.body.appendChild(el);
+    }
+    return el;
+}
+
+// Draws percentile labels in the padding strip below the x-axis (layout.padding.bottom
+// reserves the room). Reads chart.$percentileLabels = [{x, color, text, row, exact}], and
+// records each label's hit box in chart.$percentileLabelRects for hover detection.
+if (typeof Chart !== 'undefined') {
+    Chart.register({
+        id: 'percentileTopLabels',
+        afterDraw(chart) {
+            chart.$percentileLabelRects = [];
+            const labels = chart.$percentileLabels;
+            if (chart.$hidePercentiles || !labels || !labels.length) return;
+            const xScale = chart.scales.x;
+            const { ctx, chartArea } = chart;
+            const ROW_H = 17;
+            const FONT = '12px sans-serif';
+            ctx.save();
+            ctx.font = FONT;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            labels.forEach(l => {
+                const px = xScale.getPixelForValue(l.x);
+                if (px == null || px < chartArea.left || px > chartArea.right) return;
+                // Anchor below the x-axis scale (xScale.bottom is beneath the tick values and
+                // axis title) so the labels sit under the x values. row 0 (After) on the upper
+                // line, row 1 (Before) just below it.
+                const cy = xScale.bottom + 12 + l.row * ROW_H;
+                const w = ctx.measureText(l.text).width + 8;
+                const x0 = px - w / 2, y0 = cy - ROW_H / 2 + 1;
+                ctx.fillStyle = l.color;
+                ctx.fillRect(x0, y0, w, ROW_H - 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(l.text, px, cy);
+                chart.$percentileLabelRects.push({
+                    x0, y0, x1: x0 + w, y1: y0 + ROW_H - 2,
+                    text: l.text, exact: l.exact
+                });
+            });
+            ctx.restore();
+        },
+        afterEvent(chart, args) {
+            const rects = chart.$percentileLabelRects;
+            const e = args.event;
+            const tip = getPercentileTooltip();
+            if (!rects || !rects.length || !e || e.type === 'mouseout') {
+                tip.style.display = 'none';
+                return;
+            }
+            const hit = rects.find(r => e.x >= r.x0 && e.x <= r.x1 && e.y >= r.y0 && e.y <= r.y1);
+            if (hit) {
+                tip.textContent = `${hit.text}: ${hit.exact}`;
+                const ne = e.native;
+                tip.style.left = (ne ? ne.clientX : 0) + 'px';
+                tip.style.top = ((ne ? ne.clientY : 0) - 8) + 'px';
+                tip.style.display = 'block';
+                chart.canvas.style.cursor = 'pointer';
+            } else {
+                tip.style.display = 'none';
+                chart.canvas.style.cursor = 'default';
+            }
+        }
+    });
+}
+
 let allAlerts = [];
 let alertsByRowId = {};
-let currentView = 'with-bugs'; // 'with-bugs', 'without-bugs', or 'grouped'
+let currentView = 'without-bugs'; // 'with-bugs', 'without-bugs', or 'grouped'
 let currentSort = {
     column: 'pushDate',
     direction: 'desc' // 'asc' or 'desc'
@@ -385,13 +461,17 @@ function createDetailsRow(alert, rowId) {
                     <div class="cdf-chart-item" style="flex: 1; min-width: 0;">
                         <div class="detail-label">Distribution (CDF)</div>
                         <div class="detail-value cdf-chart-wrapper" style="max-width: none;">
-                            <canvas id="chart-${rowId}" data-probe="${alert.probe || ''}" height="200"></canvas>
+                            <div class="cdf-canvas-box" style="height: 408px;">
+                                <canvas id="chart-${rowId}" data-probe="${alert.probe || ''}"></canvas>
+                            </div>
                         </div>
                     </div>
                     <div class="cdf-chart-item" style="flex: 1; min-width: 0;">
                         <div class="detail-label">CDF Difference (After − Before)</div>
                         <div class="detail-value cdf-chart-wrapper" style="max-width: none;">
-                            <canvas id="diff-chart-${rowId}" height="200"></canvas>
+                            <div class="cdf-canvas-box" style="height: 360px;">
+                                <canvas id="diff-chart-${rowId}"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>` : ''}
@@ -441,7 +521,23 @@ function convertFromNanoseconds(valueNs, unit) {
     return valueNs / (factors[unit] || 1);
 }
 
-function setupChartBehavior(canvas, isTouchDevice) {
+
+function percentileFromCdf(cdfValues, bins, pct) {
+    // Find the CDF segment that spans this percentile value using linear interpolation
+    for (let i = 0; i < cdfValues.length - 1; i++) {
+        if (cdfValues[i] <= pct && cdfValues[i + 1] >= pct) {
+            // Linear interpolation between adjacent points
+            const y0 = cdfValues[i], y1 = cdfValues[i + 1];
+            if (y1 === y0) return bins[i] > 0 ? bins[i] : 1;
+            const frac = (pct - y0) / (y1 - y0);
+            return bins[i] + (bins[i + 1] - bins[i]) * frac;
+        }
+    }
+    // If percentile is outside range, clamp to nearest bin
+    return cdfValues.length > 0 && bins[cdfValues.length - 1] > 0 ? bins[cdfValues.length - 1] : 1;
+}
+
+function setupChartBehavior(canvas, isTouchDevice, includePercentileToggle = false) {
     canvas.style.touchAction = 'none';
     canvas.addEventListener('dblclick', (e) => e.preventDefault());
 
@@ -483,6 +579,9 @@ function setupChartBehavior(canvas, isTouchDevice) {
         chart.update('none');
     }, { passive: false });
 
+    const controls = document.createElement('div');
+    controls.className = 'chart-controls';
+
     const resetBtn = document.createElement('button');
     resetBtn.textContent = 'Reset Zoom';
     resetBtn.className = 'reset-zoom-btn';
@@ -495,7 +594,34 @@ function setupChartBehavior(canvas, isTouchDevice) {
         chart.scales.y.options.max = originalLimits.yMax;
         chart.update('default');
     };
-    canvas.parentElement.appendChild(resetBtn);
+    controls.appendChild(resetBtn);
+
+    // Toggle the percentile vertical lines and their labels on/off. Only the main CDF chart
+    // has these annotations, so the toggle is omitted on the difference chart.
+    if (includePercentileToggle) {
+        const togglePctBtn = document.createElement('button');
+        togglePctBtn.textContent = 'Hide Percentiles';
+        togglePctBtn.className = 'reset-zoom-btn';
+        togglePctBtn.onclick = () => {
+            const chart = canvas._chartInstance;
+            if (!chart || chart === 'pending') return;
+            chart.$hidePercentiles = !chart.$hidePercentiles;
+            const ann = chart.options.plugins.annotation && chart.options.plugins.annotation.annotations;
+            if (ann) {
+                Object.values(ann).forEach(a => { a.display = !chart.$hidePercentiles; });
+            }
+            togglePctBtn.textContent = chart.$hidePercentiles ? 'Show Percentiles' : 'Hide Percentiles';
+            chart.update('none');
+        };
+        controls.appendChild(togglePctBtn);
+    }
+
+    // The canvas lives in a fixed-height .cdf-canvas-box; attach controls to the
+    // outer wrapper. Insert the buttons and hint above the canvas box, just under
+    // the graph title.
+    const controlsParent = canvas.closest('.cdf-chart-wrapper') || canvas.parentElement;
+    const canvasBox = canvas.closest('.cdf-canvas-box');
+    controlsParent.insertBefore(controls, canvasBox || controlsParent.firstChild);
 
     const defaultHint = isTouchDevice
         ? 'Drag to zoom · Pinch to zoom'
@@ -503,7 +629,7 @@ function setupChartBehavior(canvas, isTouchDevice) {
     const hint = document.createElement('div');
     hint.className = 'chart-hint';
     hint.textContent = defaultHint;
-    canvas.parentElement.appendChild(hint);
+    controlsParent.insertBefore(hint, canvasBox || controlsParent.firstChild);
 
     if (!isTouchDevice) {
         let lastDownTime = 0;
@@ -659,6 +785,7 @@ async function renderCDFChart(canvasId) {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             animation: false,
             plugins: {
                 title: {
@@ -722,7 +849,78 @@ async function renderCDFChart(canvasId) {
         }
     });
 
-    setupChartBehavior(currentCanvas, isTouchDevice);
+    setupChartBehavior(currentCanvas, isTouchDevice, true);
+
+    // Compute percentiles and add vertical line annotations for median, p5, p75, p95 on CDF chart.
+    // Both before and after share the same bin array (before.bin serves both).
+    if (beforePoints.length > 0 && afterPoints.length > 0) {
+        const medianBeforePct = percentileFromCdf(beforeCdf, bins, 0.5);
+        const p5BeforePct     = percentileFromCdf(beforeCdf, bins, 0.05);
+        const p75BeforePct    = percentileFromCdf(beforeCdf, bins, 0.75);
+        const p95BeforePct    = percentileFromCdf(beforeCdf, bins, 0.95);
+
+        const medianAfterPct  = percentileFromCdf(afterCdf, bins, 0.5);
+        const p5AfterPct      = percentileFromCdf(afterCdf, bins, 0.05);
+        const p75AfterPct     = percentileFromCdf(afterCdf, bins, 0.75);
+        const p95AfterPct     = percentileFromCdf(afterCdf, bins, 0.95);
+
+        // Convert from nanoseconds to chart x-axis value
+        function toX(valNs) {
+            if (!valNs || valNs <= 0) return null;
+            return convertFromNanoseconds(valNs, timeUnit);
+        }
+
+        const annotations = {};
+        const topLabels = [];
+
+        // row 0 sits just above the plot, row 1 a little higher. Before lines go on the
+        // upper row and After on the lower row so the two never collide at a shared x.
+        function addAnn(key, displayX, color, labelPct, row) {
+            if (displayX === null || displayX <= 0) return;
+            annotations[key] = {
+                type: 'line',
+                xMin: displayX,
+                xMax: displayX,
+                borderColor: color,
+                borderWidth: 2,
+                borderDash: [6, 4]
+            };
+            topLabels.push({ x: displayX, color, text: labelPct, row, exact: formatBinValue(displayX, timeUnit) });
+        }
+
+        // Before (blue #4a7eff) vertical lines at each percentile
+        addAnn('medianBefore', toX(medianBeforePct), '#4a7eff', 'B-Median', 1);
+        addAnn('p5Before',     toX(p5BeforePct),     '#4a7eff', 'B-p5',     1);
+        addAnn('p75Before',    toX(p75BeforePct),    '#4a7eff', 'B-p75',    1);
+        addAnn('p95Before',    toX(p95BeforePct),    '#4a7eff', 'B-p95',    1);
+
+        // After (orange #ff6b4a) vertical lines at each percentile
+        addAnn('medianAfter',  toX(medianAfterPct),  '#ff6b4a', 'A-Median', 0);
+        addAnn('p5After',      toX(p5AfterPct),       '#ff6b4a', 'A-p5',     0);
+        addAnn('p75After',     toX(p75AfterPct),      '#ff6b4a', 'A-p75',    0);
+        addAnn('p95After',     toX(p95AfterPct),      '#ff6b4a', 'A-p95',    0);
+
+        // Apply annotation lines via chartjs-plugin-annotation (v3.x API: lines live under
+        // plugins.annotation.annotations, not directly on plugins.annotation).
+        if (!currentCanvas._chartInstance.options.plugins.annotation) {
+            currentCanvas._chartInstance.options.plugins.annotation = { annotations: {} };
+        }
+        if (!currentCanvas._chartInstance.options.plugins.annotation.annotations) {
+            currentCanvas._chartInstance.options.plugins.annotation.annotations = {};
+        }
+        Object.assign(currentCanvas._chartInstance.options.plugins.annotation.annotations, annotations);
+
+        // The labels themselves are drawn in a reserved strip below the x-axis by the
+        // percentileTopLabels plugin (registered once below). Reserve room for two rows.
+        if (!currentCanvas._chartInstance.options.layout) {
+            currentCanvas._chartInstance.options.layout = {};
+        }
+        currentCanvas._chartInstance.options.layout.padding =
+            Object.assign({}, currentCanvas._chartInstance.options.layout.padding, { bottom: 48 });
+        currentCanvas._chartInstance.$percentileLabels = topLabels;
+        currentCanvas._chartInstance.update('none');
+    }
+
 
     // Build diff points: after CDF minus before CDF at each bin
     const diffPoints = beforePoints.map((pt, i) => ({ x: pt.x, y: afterPoints[i].y - pt.y }));
@@ -760,6 +958,7 @@ async function renderCDFChart(canvasId) {
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 animation: false,
                 plugins: {
                     title: { display: false },
@@ -822,7 +1021,7 @@ async function renderCDFChart(canvasId) {
 
 function getRowHTMLWithBug(alert, rowId, bugStatusClass) {
     const probeContent = alert.probe
-        ? `<a href="https://glam.telemetry.mozilla.org/fog/probe/${encodeURIComponent(alert.probe)}/explore?os=${encodeURIComponent(alert.platform)}"
+        ? `<a href="https://glam.telemetry.mozilla.org/fog/probe/${encodeURIComponent(alert.probe)}/explore?os=${encodeURIComponent(alert.platform)}&normalizationType=non_normalized"
               target="_blank"
               class="bug-link"
               onclick="event.stopPropagation()">${alert.probe}</a>${' '.repeat(maxProbeLength - alert.probe.length)}`
@@ -854,7 +1053,7 @@ function getRowHTMLWithBug(alert, rowId, bugStatusClass) {
 
 function getRowHTMLWithoutBug(alert, rowId) {
     const probeContent = alert.probe
-        ? `<a href="https://glam.telemetry.mozilla.org/fog/probe/${encodeURIComponent(alert.probe)}/explore?os=${encodeURIComponent(alert.platform)}"
+        ? `<a href="https://glam.telemetry.mozilla.org/fog/probe/${encodeURIComponent(alert.probe)}/explore?os=${encodeURIComponent(alert.platform)}&normalizationType=non_normalized"
               target="_blank"
               class="bug-link"
               onclick="event.stopPropagation()">${alert.probe}</a>${' '.repeat(maxProbeLength - alert.probe.length)}`
@@ -1010,7 +1209,7 @@ function renderGroupedAlerts(alerts) {
             alertsByRowId[nestedRowId] = alert;
             const bugStatusClass = getBugStatusClass(alert.bugStatus);
             const probeContent = alert.probe
-                ? `<a href="https://glam.telemetry.mozilla.org/fog/probe/${encodeURIComponent(alert.probe)}/explore?os=${encodeURIComponent(alert.platform)}"
+                ? `<a href="https://glam.telemetry.mozilla.org/fog/probe/${encodeURIComponent(alert.probe)}/explore?os=${encodeURIComponent(alert.platform)}&normalizationType=non_normalized"
                       target="_blank"
                       class="bug-link"
                       onclick="event.stopPropagation()">${alert.probe}</a>${' '.repeat(maxProbeLength - alert.probe.length)}`
@@ -1221,7 +1420,7 @@ function getViewFromURL() {
     if (viewParam && ['with-bugs', 'without-bugs', 'grouped'].includes(viewParam)) {
         return viewParam;
     }
-    return 'with-bugs'; // default
+    return 'without-bugs'; // default
 }
 
 function getFiltersFromURL() {
