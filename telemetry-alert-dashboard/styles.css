@@ -698,6 +698,147 @@ tbody td.probe-cell {
     color: #666;
 }
 
+/* ── Potential culprits ────────────────────────────────────────────────── */
+
+.culprit-section {
+    /* Top padding matches the .details-content grid gap so the button doesn't
+       butt up against the detail cards above it. */
+    padding: 15px 12px 12px;
+}
+
+.culprit-btn {
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: white;
+    color: #667eea;
+    border: 2px solid #667eea;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.culprit-btn:hover:not(:disabled) {
+    background: #667eea;
+    color: white;
+}
+
+.culprit-btn:disabled {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+.culprit-results:not(:empty) {
+    margin-top: 10px;
+}
+
+.culprit-note,
+.culprit-empty,
+.culprit-error {
+    font-size: 0.8rem;
+    color: #666;
+    margin: 6px 0;
+}
+
+.culprit-error {
+    color: #c82333;
+}
+
+.culprit-group {
+    margin-top: 10px;
+    border-left: 3px solid #f57c00;
+    padding-left: 10px;
+}
+
+.culprit-group-exact {
+    border-left-color: #c82333;
+}
+
+.culprit-group-title {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+
+summary.culprit-group-title {
+    cursor: pointer;
+}
+
+.culprit-group details[open] summary.culprit-group-title {
+    margin-bottom: 8px;
+}
+
+.culprit-count {
+    background: #eee;
+    color: #555;
+    border-radius: 10px;
+    padding: 1px 7px;
+    font-size: 0.75rem;
+}
+
+.culprit-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    background: white;
+    border-radius: 5px;
+}
+
+.culprit-table th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #666;
+    padding: 6px 8px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.culprit-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: top;
+}
+
+.culprit-table tr:last-child td {
+    border-bottom: none;
+}
+
+.culprit-bug,
+.culprit-status,
+.culprit-author {
+    white-space: nowrap;
+}
+
+.culprit-summary {
+    word-break: break-word;
+}
+
+.culprit-rev {
+    font-family: monospace;
+    color: #667eea;
+    text-decoration: none;
+    margin-right: 6px;
+}
+
+.culprit-rev:hover {
+    text-decoration: underline;
+}
+
+.culprit-tag {
+    display: inline-block;
+    background: #fff3e0;
+    color: #f57c00;
+    border-radius: 3px;
+    padding: 0 5px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-right: 6px;
+}
+
 /* ── Dark mode ─────────────────────────────────────────────────────────── */
 
 html.dark,
@@ -876,4 +1017,53 @@ html.dark .badge.duplicate {
 html.dark .badge.na {
     background-color: #2a2a2a;
     color: #aaa;
+}
+
+html.dark .culprit-btn {
+    background: #1e1e2e;
+    color: #8fa8ff;
+    border-color: #8fa8ff;
+}
+
+html.dark .culprit-btn:hover:not(:disabled) {
+    background: #2a2a4a;
+    color: #8fa8ff;
+}
+
+html.dark .culprit-table {
+    background: #1e1e2e;
+}
+
+html.dark .culprit-table th {
+    color: #aaa;
+    border-bottom-color: #333;
+}
+
+html.dark .culprit-table td {
+    color: #e0e0e0;
+    border-bottom-color: #2a2a3a;
+}
+
+html.dark .culprit-rev {
+    color: #8fa8ff;
+}
+
+html.dark .culprit-note,
+html.dark .culprit-empty,
+html.dark .culprit-group-title {
+    color: #aaa;
+}
+
+html.dark .culprit-error {
+    color: #ff7070;
+}
+
+html.dark .culprit-count {
+    background: #2a2a4a;
+    color: #bbb;
+}
+
+html.dark .culprit-tag {
+    background: #3a2a10;
+    color: #ffb74d;
 }

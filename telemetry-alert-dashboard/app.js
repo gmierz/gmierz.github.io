@@ -93,6 +93,7 @@ let currentFilters = {
     alertId: null
 };
 let maxProbeLength = 0;
+let probeMetadataCache = {}; // probe name -> Promise resolving to the metric dictionary entry (or null)
 let groupedSortColumn = 'detectionDate'; // 'summaryId', 'count', 'mostRecent', or 'detectionDate'
 let groupedSortDirection = 'desc'; // 'asc' or 'desc' for grouped view
 
@@ -432,6 +433,10 @@ function createDetailsRow(alert, rowId) {
                         <div class="detail-label">Created</div>
                         <div class="detail-value">${formatDate(alert.created)}</div>
                     </div>
+                    <div class="detail-item" style="grid-row: 1;">
+                        <div class="detail-label">Bugzilla Component</div>
+                        <div id="bugzilla-${rowId}" class="detail-value">Loading…</div>
+                    </div>
                     ${hasCdfData(alert) ? `
                     <div class="detail-item" style="grid-row: 1;">
                         <div class="detail-label">Status</div>
@@ -475,6 +480,11 @@ function createDetailsRow(alert, rowId) {
                         </div>
                     </div>
                 </div>` : ''}
+                <div class="culprit-section">
+                    <button class="culprit-btn" id="culprit-btn-${rowId}"
+                            onclick="event.stopPropagation(); generateCulprits('${rowId}')">Generate Potential Culprits</button>
+                    <div class="culprit-results" id="culprit-results-${rowId}"></div>
+                </div>
             </td>
         </tr>
     `;
@@ -490,6 +500,7 @@ function toggleRow(rowId) {
     } else {
         detailsRow.classList.add('visible');
         expandBtn.classList.add('expanded');
+        populateBugzillaComponent(rowId);
         if (document.getElementById(`chart-${rowId}`)) {
             renderCDFChart(`chart-${rowId}`);
         }
@@ -676,6 +687,91 @@ function setupChartBehavior(canvas, isTouchDevice, includePercentileToggle = fal
     }
 }
 
+// Fetch (and cache) a probe's entry from the Glean dictionary. The same entry carries
+// time_unit, monitor.lower_is_better and the Bugzilla component tag.
+function fetchProbeMetadata(probe) {
+    if (!probe) return Promise.resolve(null);
+    if (!probeMetadataCache[probe]) {
+        const url = `https://dictionary.telemetry.mozilla.org/data/firefox_desktop/metrics/data_${probe}.json`;
+        probeMetadataCache[probe] = fetch(url)
+            .then(response => (response.ok ? response.json() : null))
+            .catch(e => {
+                console.warn('Could not fetch probe metadata for', probe, e);
+                return null;
+            });
+    }
+    return probeMetadataCache[probe];
+}
+
+// The dictionary exposes the Bugzilla component as a tag named "Product :: Component".
+function getBugzillaComponent(metadata) {
+    const tags = metadata?.tags;
+    if (!Array.isArray(tags)) return null;
+    const tag = tags.find(t => t?.name && /bugzilla component/i.test(t.description || ''))
+        || tags.find(t => typeof t?.name === 'string' && t.name.includes('::'));
+    return tag?.name || null;
+}
+
+async function populateBugzillaComponent(rowId) {
+    const el = document.getElementById(`bugzilla-${rowId}`);
+    if (!el || el.dataset.loaded) return;
+    el.dataset.loaded = 'true';
+
+    const probe = alertsByRowId[rowId]?.probe;
+    const metadata = await fetchProbeMetadata(probe);
+    const component = getBugzillaComponent(metadata);
+
+    if (!component) {
+        el.textContent = 'N/A';
+        return;
+    }
+
+    const [product, ...rest] = component.split('::').map(part => part.trim());
+    const params = new URLSearchParams({ product });
+    if (rest.length) params.set('component', rest.join(' :: '));
+    el.innerHTML = `<a href="https://bugzilla.mozilla.org/buglist.cgi?${params}" target="_blank" onclick="event.stopPropagation()">${component}</a>`;
+}
+
+// The Push Range link carries the repo the alert's revisions belong to.
+function getAlertRepo(alert) {
+    try {
+        return new URL(alert.pushRange).searchParams.get('repo') || 'mozilla-central';
+    } catch (e) {
+        return 'mozilla-central';
+    }
+}
+
+// Button handler for "Generate Potential Culprits" — resolves the probe's Bugzilla
+// component, then hands the push range off to culprits.js.
+async function generateCulprits(rowId) {
+    const button = document.getElementById(`culprit-btn-${rowId}`);
+    const results = document.getElementById(`culprit-results-${rowId}`);
+    if (!button || !results || button.disabled) return;
+
+    const alert = alertsByRowId[rowId];
+    button.disabled = true;
+    button.textContent = 'Searching push range…';
+    results.innerHTML = '';
+
+    try {
+        const metadata = await fetchProbeMetadata(alert?.probe);
+        const result = await findPotentialCulprits({
+            repo: getAlertRepo(alert),
+            fromRevision: alert?.oldestPush,
+            toRevision: alert?.newestPush,
+            probeComponent: getBugzillaComponent(metadata),
+        });
+        results.innerHTML = renderCulpritsHTML(result);
+        button.textContent = 'Regenerate Potential Culprits';
+    } catch (e) {
+        console.error('Could not generate culprits for', alert?.probe, e);
+        results.innerHTML = `<p class="culprit-error">${e.message}</p>`;
+        button.textContent = 'Generate Potential Culprits';
+    } finally {
+        button.disabled = false;
+    }
+}
+
 async function renderCDFChart(canvasId) {
     const canvas = document.getElementById(canvasId);
     if (!canvas || canvas._chartInstance) return;
@@ -687,21 +783,13 @@ async function renderCDFChart(canvasId) {
     let timeUnit = 'ns';
     let lowerIsBetter = null;
 
-    if (probe) {
-        try {
-            const url = `https://dictionary.telemetry.mozilla.org/data/firefox_desktop/metrics/data_${probe}.json`;
-            const response = await fetch(url);
-            if (response.ok) {
-                const metadata = await response.json();
-                if (metadata.time_unit) {
-                    timeUnit = normalizeTimeUnit(metadata.time_unit);
-                }
-                if (metadata.monitor && typeof metadata.monitor === 'object' && 'lower_is_better' in metadata.monitor) {
-                    lowerIsBetter = metadata.monitor.lower_is_better;
-                }
-            }
-        } catch (e) {
-            console.warn('Could not fetch probe metadata for', probe, e);
+    const metadata = await fetchProbeMetadata(probe);
+    if (metadata) {
+        if (metadata.time_unit) {
+            timeUnit = normalizeTimeUnit(metadata.time_unit);
+        }
+        if (metadata.monitor && typeof metadata.monitor === 'object' && 'lower_is_better' in metadata.monitor) {
+            lowerIsBetter = metadata.monitor.lower_is_better;
         }
     }
 
