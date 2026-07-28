@@ -424,6 +424,11 @@ function createDetailsRow(alert, rowId) {
     return `
         <tr class="details-row" id="details-${rowId}">
             <td colspan="7" class="details-cell">
+                <div class="culprit-section">
+                    <button class="culprit-btn" id="culprit-btn-${rowId}"
+                            onclick="event.stopPropagation(); generateCulprits('${rowId}')">Generate Potential Root Causes</button>
+                    <div class="culprit-results" id="culprit-results-${rowId}"></div>
+                </div>
                 <div class="details-content">
                     <div class="detail-item" style="grid-row: 1;">
                         <div class="detail-label">Alert Summary ID</div>
@@ -480,11 +485,6 @@ function createDetailsRow(alert, rowId) {
                         </div>
                     </div>
                 </div>` : ''}
-                <div class="culprit-section">
-                    <button class="culprit-btn" id="culprit-btn-${rowId}"
-                            onclick="event.stopPropagation(); generateCulprits('${rowId}')">Generate Potential Culprits</button>
-                    <div class="culprit-results" id="culprit-results-${rowId}"></div>
-                </div>
             </td>
         </tr>
     `;
@@ -762,11 +762,11 @@ async function generateCulprits(rowId) {
             probeComponent: getBugzillaComponent(metadata),
         });
         results.innerHTML = renderCulpritsHTML(result);
-        button.textContent = 'Regenerate Potential Culprits';
+        button.textContent = 'Regenerate Potential Root Causes';
     } catch (e) {
-        console.error('Could not generate culprits for', alert?.probe, e);
+        console.error('Could not generate root causes for', alert?.probe, e);
         results.innerHTML = `<p class="culprit-error">${e.message}</p>`;
-        button.textContent = 'Generate Potential Culprits';
+        button.textContent = 'Generate Potential Root Causes';
     } finally {
         button.disabled = false;
     }

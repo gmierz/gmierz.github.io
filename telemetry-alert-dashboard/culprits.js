@@ -1,10 +1,11 @@
 // Potential culprit detection for telemetry alerts.
 //
 // Walks the commits in an alert's push range, pulls the bug number out of each commit
-// message, looks those bugs up in Bugzilla, and keeps the ones filed against the same
-// Bugzilla product/component as the probe that alerted. A commit touching the same
-// component as the probe is a far more likely cause than the rest of the range, so this
-// narrows a few hundred commits down to a handful worth reading.
+// message, looks those bugs up in Bugzilla, and splits them into best matches — the
+// probe's own component or a sibling under the same parent component — and other matches,
+// which only share its product. A commit touching the same area as the probe is a far more
+// likely cause than the rest of the range, so this narrows a few hundred commits down to a
+// handful worth reading.
 //
 // Sourcing the commits is awkward. hg.mozilla.org's pushlog has exactly the right data
 // but sits behind a bot challenge that trips on any browser User-Agent, returning an
@@ -60,6 +61,19 @@ function splitComponentTag(tag) {
     const component = parts.join(' :: ');
     if (!product || !component) return null;
     return { product, component };
+}
+
+// Bugzilla nests components by prefixing them with their parent: "Networking: HTTP",
+// "Networking: Cache" and plain "Networking" are all one team's area. A probe owned by
+// one of them is just as easily moved by a change to a sibling, so the family — the text
+// before the first colon — is what gets compared, not the full component name.
+function componentFamily(component) {
+    return String(component || '').split(':')[0].trim();
+}
+
+function sameComponentFamily(a, b) {
+    const familyA = componentFamily(a).toLowerCase();
+    return familyA !== '' && familyA === componentFamily(b).toLowerCase();
 }
 
 // Only the first line is scanned: later lines hold review/differential metadata that
@@ -219,7 +233,8 @@ async function fetchBugComponents(bugIds) {
 }
 
 /**
- * Find commits in a push range whose bug shares the probe's Bugzilla component.
+ * Find commits in a push range whose bug shares the probe's Bugzilla component family
+ * (best matches) or only its product (other matches).
  *
  * @param {object} options
  * @param {string} options.repo           Repository name, e.g. "mozilla-central".
@@ -243,8 +258,12 @@ async function findPotentialCulprits({ repo, fromRevision, toRevision, probeComp
     const allBugIds = Array.from(new Set(commits.flatMap(commit => commit.bugIds)));
     const bugs = await fetchBugComponents(allBugIds);
 
-    const componentMatches = [];
-    const productMatches = [];
+    // Exact-component and sibling-component hits are both listed as best matches, exact
+    // ones first; a sibling is close enough to the probe's area to be worth reading in the
+    // same pass, unlike the same-product remainder.
+    const bestMatches = [];
+    const siblingMatches = [];
+    const otherMatches = [];
     const unresolvedBugIds = allBugIds.filter(id => !bugs.has(id));
 
     commits.forEach(commit => {
@@ -254,9 +273,13 @@ async function findPotentialCulprits({ repo, fromRevision, toRevision, probeComp
         if (!matchedBugs.length) return;
 
         const exact = matchedBugs.some(bug => bug.component === target.component);
-        const entry = { ...commit, bugs: matchedBugs, match: exact ? 'component' : 'product' };
-        (exact ? componentMatches : productMatches).push(entry);
+        const family = !exact
+            && matchedBugs.some(bug => sameComponentFamily(bug.component, target.component));
+        const match = exact ? 'component' : family ? 'family' : 'product';
+        const entry = { ...commit, bugs: matchedBugs, match };
+        (exact ? bestMatches : family ? siblingMatches : otherMatches).push(entry);
     });
+    bestMatches.push(...siblingMatches);
 
     return {
         repo,
@@ -273,8 +296,8 @@ async function findPotentialCulprits({ repo, fromRevision, toRevision, probeComp
         commitCount: commits.length,
         bugCount: allBugIds.length,
         unresolvedBugIds,
-        componentMatches,
-        productMatches
+        bestMatches,
+        otherMatches
     };
 }
 
@@ -315,34 +338,30 @@ function renderCulpritTable(entries) {
     `;
 }
 
-function renderComponentMatches(entries) {
+function renderMatchGroup(entries, title, groupClass, open) {
     if (!entries.length) return '';
     return `
-        <div class="culprit-group culprit-group-exact">
-            <div class="culprit-group-title">
-                Same component as the probe <span class="culprit-count">${entries.length}</span>
-            </div>
-            ${renderCulpritTable(entries)}
-        </div>
-    `;
-}
-
-// Same-product matches are weak evidence — a product like Core covers hundreds of
-// commits per range — so they stay collapsed behind a disclosure rather than burying
-// the component matches that were actually asked for.
-function renderProductMatches(entries, product) {
-    if (!entries.length) return '';
-    return `
-        <div class="culprit-group culprit-group-weak">
-            <details onclick="event.stopPropagation()">
+        <div class="culprit-group ${groupClass}">
+            <details ${open ? 'open ' : ''}onclick="event.stopPropagation()">
                 <summary class="culprit-group-title">
-                    Same product, different component (${escapeHtml(product)})
-                    <span class="culprit-count">${entries.length}</span>
+                    ${title} <span class="culprit-count">${entries.length}</span>
                 </summary>
                 ${renderCulpritTable(entries)}
             </details>
         </div>
     `;
+}
+
+// The probe's own component and its siblings under the same parent, exact ones first.
+// Open by default — this is the list the button was pressed for.
+function renderBestMatches(entries) {
+    return renderMatchGroup(entries, 'Best matches', 'culprit-group-exact', true);
+}
+
+// Same-product matches are weak evidence — a product like Core covers hundreds of
+// commits per range — so they stay collapsed rather than burying the best matches.
+function renderOtherMatches(entries) {
+    return renderMatchGroup(entries, 'Other matches', 'culprit-group-weak', false);
 }
 
 function formatWindowTime(date) {
@@ -352,22 +371,32 @@ function formatWindowTime(date) {
 }
 
 function renderCulpritsHTML(result) {
-    const { target, componentMatches, productMatches } = result;
+    const { target, bestMatches, otherMatches } = result;
     const targetLabel = escapeHtml(`${target.product} :: ${target.component}`);
+    const family = componentFamily(target.component);
+    // A component with no parent prefix ("Tabbed Browser") has no siblings to mention.
+    const familyNote = family === target.component
+        ? ''
+        : ` and its <code>${escapeHtml(`${target.product} :: ${family}`)}</code> siblings`;
 
     const scanned = `Scanned ${result.commitCount} commit${result.commitCount === 1 ? '' : 's'}`
-        + ` from <code>${escapeHtml(result.branch)}</code> spanning the alert's`
+        + ` from mozilla-central spanning the alert's`
         + ` ${result.pushCount} push${result.pushCount === 1 ? '' : 'es'}`
-        + ` (${result.bugCount} bug${result.bugCount === 1 ? '' : 's'} referenced)`
-        + ` against <strong>${targetLabel}</strong>.`;
+        + ` (${result.bugCount} bug${result.bugCount === 1 ? '' : 's'} referenced).`;
+
+    // Bugs the anonymous Bugzilla API can't see are holes in that scan, so the count
+    // belongs next to it rather than in a footnote below the tables.
+    const unresolved = result.unresolvedBugIds.length;
+    const unresolvedNote = unresolved
+        ? ` ${unresolved} referenced bug${unresolved === 1 ? ' was' : 's were'} not readable by
+           Bugzilla's public API (likely security-restricted) and could not be checked.`
+        : '';
 
     // The window is wider than the push range on purpose — see WINDOW_LEAD_MS. Say so,
     // because a listed commit is not guaranteed to be inside the range.
-    const approximateNote = `<p class="culprit-note">Commits are matched by date
-        (${formatWindowTime(result.windowStart)} &ndash; ${formatWindowTime(result.windowEnd)}, reaching
-        back 6h before the range to cover the autoland&rarr;central merge delay), so this
-        <strong>approximates</strong> the push range: it very rarely misses a commit that is in the
-        range, but does include some that landed just outside it. Confirm against
+    const approximateNote = `<p class="culprit-note">Commits are matched by the date range: 
+        ${formatWindowTime(result.windowStart)} - ${formatWindowTime(result.windowEnd)}.
+        Confirm against
         <a href="https://hg.mozilla.org/${encodeURIComponent(result.repo)}/pushloghtml?fromchange=${encodeURIComponent(result.fromRevision)}&amp;tochange=${encodeURIComponent(result.toRevision)}"
            target="_blank" onclick="event.stopPropagation()">the pushlog</a> before acting on a result.</p>`;
 
@@ -376,25 +405,20 @@ function renderCulpritsHTML(result) {
         caveats.push(`The commit list hit the ${MAX_COMMIT_PAGES}-page fetch limit, so the oldest
             part of this window was not checked.`);
     }
-    if (result.unresolvedBugIds.length) {
-        caveats.push(`${result.unresolvedBugIds.length} referenced
-            bug${result.unresolvedBugIds.length === 1 ? ' was' : 's were'} not readable by Bugzilla's
-            public API (likely security-restricted) and could not be checked.`);
-    }
     const caveatNotes = caveats.map(text => `<p class="culprit-note">${text}</p>`).join('');
 
-    const emptyNote = componentMatches.length
+    const emptyNote = bestMatches.length
         ? ''
         : `<p class="culprit-empty">No commit in this window references a bug filed against the probe's
-           component. The cause may be a bug in another component, an infrastructure change, or a
-           commit landed without a bug.</p>`;
+           component${familyNote ? ' or a sibling of it' : ''}. The cause may be a bug in another
+           component, an infrastructure change, or a commit landed without a bug.</p>`;
 
     return `
-        <p class="culprit-note">${scanned}</p>
+        <p class="culprit-note">${scanned}${unresolvedNote}</p>
         ${approximateNote}
         ${emptyNote}
-        ${renderComponentMatches(componentMatches)}
-        ${renderProductMatches(productMatches, target.product)}
+        ${renderBestMatches(bestMatches)}
+        ${renderOtherMatches(otherMatches)}
         ${caveatNotes}
     `;
 }

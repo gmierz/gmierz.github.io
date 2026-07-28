@@ -701,9 +701,9 @@ tbody td.probe-cell {
 /* ── Potential culprits ────────────────────────────────────────────────── */
 
 .culprit-section {
-    /* Top padding matches the .details-content grid gap so the button doesn't
-       butt up against the detail cards above it. */
-    padding: 15px 12px 12px;
+    /* Bottom padding matches the .details-content grid gap so the button and its
+       results don't butt up against the detail cards below them. */
+    padding: 0 0 15px;
 }
 
 .culprit-btn {
@@ -749,13 +749,19 @@ tbody td.probe-cell {
     padding-left: 10px;
 }
 
+/* Best matches (probe's component family) stand out from the same-product remainder. */
 .culprit-group-exact {
     border-left-color: #c82333;
 }
 
+.culprit-group-weak {
+    border-left-color: #999;
+}
+
 .culprit-group-title {
     font-weight: 600;
-    font-size: 0.8rem;
+    /* Matches .detail-label so the group titles read as peers of the detail cards. */
+    font-size: 0.85rem;
     color: #666;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -784,15 +790,25 @@ summary.culprit-group-title {
     font-size: 0.8rem;
     background: white;
     border-radius: 5px;
+    /* Best matches and other matches are separate tables; without fixed widths each one
+       sizes its columns to its own rows and the two lists don't line up. */
+    table-layout: fixed;
 }
+
+.culprit-table th:nth-child(1) { width: 8%; }   /* Bug */
+.culprit-table th:nth-child(2) { width: 18%; }  /* Component */
+.culprit-table th:nth-child(3) { width: 13%; }  /* Bug Status */
+.culprit-table th:nth-child(5) { width: 14%; }  /* Author — Commit takes the remainder */
 
 .culprit-table th {
     text-align: left;
     font-weight: 600;
-    font-size: 0.7rem;
+    font-size: 0.85rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #666;
+    /* .details-cell paints nested table headers the grid's purple, so the labels on top of
+       it are white like every other table header rather than the body text's grey. */
+    color: white;
     padding: 6px 8px;
     border-bottom: 1px solid #e0e0e0;
 }
@@ -807,14 +823,16 @@ summary.culprit-group-title {
     border-bottom: none;
 }
 
+/* Fixed columns can't widen for a long value, so everything but the short status wraps
+   inside its column instead of spilling over the next one. */
 .culprit-bug,
-.culprit-status,
+.culprit-summary,
 .culprit-author {
-    white-space: nowrap;
+    word-break: break-word;
 }
 
-.culprit-summary {
-    word-break: break-word;
+.culprit-status {
+    white-space: nowrap;
 }
 
 .culprit-rev {
@@ -1035,7 +1053,7 @@ html.dark .culprit-table {
 }
 
 html.dark .culprit-table th {
-    color: #aaa;
+    color: white;
     border-bottom-color: #333;
 }
 
