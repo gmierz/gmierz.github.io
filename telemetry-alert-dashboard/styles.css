@@ -698,15 +698,15 @@ tbody td.probe-cell {
     color: #666;
 }
 
-/* ── Potential culprits ────────────────────────────────────────────────── */
+/* ── Potential root causes ─────────────────────────────────────────────── */
 
-.culprit-section {
+.root-cause-section {
     /* Bottom padding matches the .details-content grid gap so the button and its
        results don't butt up against the detail cards below them. */
     padding: 0 0 15px;
 }
 
-.culprit-btn {
+.root-cause-btn {
     padding: 6px 14px;
     font-size: 0.85rem;
     font-weight: 600;
@@ -717,48 +717,60 @@ tbody td.probe-cell {
     cursor: pointer;
 }
 
-.culprit-btn:hover:not(:disabled) {
+.root-cause-btn:hover:not(:disabled) {
     background: #667eea;
     color: white;
 }
 
-.culprit-btn:disabled {
+.root-cause-btn:disabled {
     opacity: 0.6;
     cursor: progress;
 }
 
-.culprit-results:not(:empty) {
+.root-cause-results:not(:empty) {
     margin-top: 10px;
 }
 
-.culprit-note,
-.culprit-empty,
-.culprit-error {
+.root-cause-note,
+.root-cause-empty,
+.root-cause-error {
     font-size: 0.8rem;
     color: #666;
     margin: 6px 0;
 }
 
-.culprit-error {
+.root-cause-error {
     color: #c82333;
 }
 
-.culprit-group {
+/* Nothing else styles these inline links, so they would fall back to the browser's default
+   navy — unreadable against the dark theme's background. */
+.root-cause-note a {
+    color: #667eea;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.root-cause-note a:hover {
+    text-decoration: underline;
+}
+
+.root-cause-group {
     margin-top: 10px;
     border-left: 3px solid #f57c00;
     padding-left: 10px;
 }
 
 /* Best matches (probe's component family) stand out from the same-product remainder. */
-.culprit-group-exact {
+.root-cause-group-exact {
     border-left-color: #c82333;
 }
 
-.culprit-group-weak {
+.root-cause-group-weak {
     border-left-color: #999;
 }
 
-.culprit-group-title {
+.root-cause-group-title {
     font-weight: 600;
     /* Matches .detail-label so the group titles read as peers of the detail cards. */
     font-size: 0.85rem;
@@ -768,15 +780,15 @@ tbody td.probe-cell {
     margin-bottom: 5px;
 }
 
-summary.culprit-group-title {
+summary.root-cause-group-title {
     cursor: pointer;
 }
 
-.culprit-group details[open] summary.culprit-group-title {
+.root-cause-group details[open] summary.root-cause-group-title {
     margin-bottom: 8px;
 }
 
-.culprit-count {
+.root-cause-count {
     background: #eee;
     color: #555;
     border-radius: 10px;
@@ -784,7 +796,7 @@ summary.culprit-group-title {
     font-size: 0.75rem;
 }
 
-.culprit-table {
+.root-cause-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.8rem;
@@ -795,12 +807,12 @@ summary.culprit-group-title {
     table-layout: fixed;
 }
 
-.culprit-table th:nth-child(1) { width: 8%; }   /* Bug */
-.culprit-table th:nth-child(2) { width: 18%; }  /* Component */
-.culprit-table th:nth-child(3) { width: 13%; }  /* Bug Status */
-.culprit-table th:nth-child(5) { width: 14%; }  /* Author — Commit takes the remainder */
+.root-cause-table th:nth-child(1) { width: 8%; }   /* Bug */
+.root-cause-table th:nth-child(2) { width: 18%; }  /* Component */
+.root-cause-table th:nth-child(3) { width: 13%; }  /* Bug Status */
+.root-cause-table th:nth-child(5) { width: 14%; }  /* Author — Commit takes the remainder */
 
-.culprit-table th {
+.root-cause-table th {
     text-align: left;
     font-weight: 600;
     font-size: 0.85rem;
@@ -813,40 +825,40 @@ summary.culprit-group-title {
     border-bottom: 1px solid #e0e0e0;
 }
 
-.culprit-table td {
+.root-cause-table td {
     padding: 6px 8px;
     border-bottom: 1px solid #f0f0f0;
     vertical-align: top;
 }
 
-.culprit-table tr:last-child td {
+.root-cause-table tr:last-child td {
     border-bottom: none;
 }
 
 /* Fixed columns can't widen for a long value, so everything but the short status wraps
    inside its column instead of spilling over the next one. */
-.culprit-bug,
-.culprit-summary,
-.culprit-author {
+.root-cause-bug,
+.root-cause-summary,
+.root-cause-author {
     word-break: break-word;
 }
 
-.culprit-status {
+.root-cause-status {
     white-space: nowrap;
 }
 
-.culprit-rev {
+.root-cause-rev {
     font-family: monospace;
     color: #667eea;
     text-decoration: none;
     margin-right: 6px;
 }
 
-.culprit-rev:hover {
+.root-cause-rev:hover {
     text-decoration: underline;
 }
 
-.culprit-tag {
+.root-cause-tag {
     display: inline-block;
     background: #fff3e0;
     color: #f57c00;
@@ -876,6 +888,7 @@ html.dark .detail-item {
 
 html.dark .info-section a,
 html.dark .detail-value a,
+html.dark .root-cause-note a,
 html.dark .doc-link {
     color: #8fa8ff;
 }
@@ -1037,51 +1050,51 @@ html.dark .badge.na {
     color: #aaa;
 }
 
-html.dark .culprit-btn {
+html.dark .root-cause-btn {
     background: #1e1e2e;
     color: #8fa8ff;
     border-color: #8fa8ff;
 }
 
-html.dark .culprit-btn:hover:not(:disabled) {
+html.dark .root-cause-btn:hover:not(:disabled) {
     background: #2a2a4a;
     color: #8fa8ff;
 }
 
-html.dark .culprit-table {
+html.dark .root-cause-table {
     background: #1e1e2e;
 }
 
-html.dark .culprit-table th {
+html.dark .root-cause-table th {
     color: white;
     border-bottom-color: #333;
 }
 
-html.dark .culprit-table td {
+html.dark .root-cause-table td {
     color: #e0e0e0;
     border-bottom-color: #2a2a3a;
 }
 
-html.dark .culprit-rev {
+html.dark .root-cause-rev {
     color: #8fa8ff;
 }
 
-html.dark .culprit-note,
-html.dark .culprit-empty,
-html.dark .culprit-group-title {
+html.dark .root-cause-note,
+html.dark .root-cause-empty,
+html.dark .root-cause-group-title {
     color: #aaa;
 }
 
-html.dark .culprit-error {
+html.dark .root-cause-error {
     color: #ff7070;
 }
 
-html.dark .culprit-count {
+html.dark .root-cause-count {
     background: #2a2a4a;
     color: #bbb;
 }
 
-html.dark .culprit-tag {
+html.dark .root-cause-tag {
     background: #3a2a10;
     color: #ffb74d;
 }

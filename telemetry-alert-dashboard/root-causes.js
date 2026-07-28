@@ -1,4 +1,4 @@
-// Potential culprit detection for telemetry alerts.
+// Potential root cause detection for telemetry alerts.
 //
 // Walks the commits in an alert's push range, pulls the bug number out of each commit
 // message, looks those bugs up in Bugzilla, and splits them into best matches — the
@@ -21,7 +21,7 @@
 // against the pushlog over three ranges, a WINDOW_LEAD of 6h recovers ~100% of the bugs
 // actually in the range (98.8-100%), at the cost of also listing some that landed near
 // but outside it (precision 64-99%, worst on merge-day ranges). Recall is what matters
-// for culprit hunting; the extra rows are disclosed in the rendered output.
+// for root cause hunting; the extra rows are disclosed in the rendered output.
 const GITHUB_API = 'https://api.github.com';
 const GITHUB_REPO = 'mozilla-firefox/firefox';
 const TREEHERDER_API = 'https://treeherder.mozilla.org/api';
@@ -127,7 +127,7 @@ async function fetchRangeWindow(repo, fromRevision, toRevision) {
     }
 
     // Treeherder's fromchange is inclusive. The oldest push is the last known-good one,
-    // so it bounds the window but its own commits are not culprits.
+    // so it bounds the window but its own commits are not root causes.
     const inRange = pushes.filter(push =>
         !push.revision.startsWith(fromRevision) && !fromRevision.startsWith(push.revision));
     if (!inRange.length) {
@@ -241,12 +241,12 @@ async function fetchBugComponents(bugIds) {
  * @param {string} options.fromRevision   Oldest push revision (exclusive — the last good push).
  * @param {string} options.toRevision     Newest push revision (inclusive).
  * @param {string} options.probeComponent Probe's dictionary tag, e.g. "Firefox :: Tabbed Browser".
- * @returns {Promise<object>} Result consumable by renderCulpritsHTML.
+ * @returns {Promise<object>} Result consumable by renderRootCausesHTML.
  */
-async function findPotentialCulprits({ repo, fromRevision, toRevision, probeComponent }) {
+async function findPotentialRootCauses({ repo, fromRevision, toRevision, probeComponent }) {
     const target = splitComponentTag(probeComponent);
     if (!target) {
-        throw new Error('No Bugzilla component is known for this probe, so culprits cannot be ranked.');
+        throw new Error('No Bugzilla component is known for this probe, so root causes cannot be ranked.');
     }
     if (!fromRevision || !toRevision) {
         throw new Error('This alert has no push range to search.');
@@ -313,23 +313,23 @@ function renderCommitRow(entry) {
 
     return `
         <tr>
-            <td class="culprit-bug">${bugLinks}</td>
+            <td class="root-cause-bug">${bugLinks}</td>
             <td>${components}</td>
-            <td class="culprit-status">${statuses}</td>
-            <td class="culprit-summary">
+            <td class="root-cause-status">${statuses}</td>
+            <td class="root-cause-summary">
                 <a href="https://github.com/${GITHUB_REPO}/commit/${entry.sha}" target="_blank"
-                   class="culprit-rev" onclick="event.stopPropagation()">${entry.sha.slice(0, 12)}</a>
-                ${entry.backout ? '<span class="culprit-tag">backout</span>' : ''}
+                   class="root-cause-rev" onclick="event.stopPropagation()">${entry.sha.slice(0, 12)}</a>
+                ${entry.backout ? '<span class="root-cause-tag">backout</span>' : ''}
                 <span>${escapeHtml(entry.summary)}</span>
             </td>
-            <td class="culprit-author">${escapeHtml(entry.author)}</td>
+            <td class="root-cause-author">${escapeHtml(entry.author)}</td>
         </tr>
     `;
 }
 
-function renderCulpritTable(entries) {
+function renderRootCauseTable(entries) {
     return `
-        <table class="culprit-table">
+        <table class="root-cause-table">
             <thead>
                 <tr><th>Bug</th><th>Component</th><th>Bug Status</th><th>Commit</th><th>Author</th></tr>
             </thead>
@@ -341,12 +341,12 @@ function renderCulpritTable(entries) {
 function renderMatchGroup(entries, title, groupClass, open) {
     if (!entries.length) return '';
     return `
-        <div class="culprit-group ${groupClass}">
+        <div class="root-cause-group ${groupClass}">
             <details ${open ? 'open ' : ''}onclick="event.stopPropagation()">
-                <summary class="culprit-group-title">
-                    ${title} <span class="culprit-count">${entries.length}</span>
+                <summary class="root-cause-group-title">
+                    ${title} <span class="root-cause-count">${entries.length}</span>
                 </summary>
-                ${renderCulpritTable(entries)}
+                ${renderRootCauseTable(entries)}
             </details>
         </div>
     `;
@@ -355,13 +355,13 @@ function renderMatchGroup(entries, title, groupClass, open) {
 // The probe's own component and its siblings under the same parent, exact ones first.
 // Open by default — this is the list the button was pressed for.
 function renderBestMatches(entries) {
-    return renderMatchGroup(entries, 'Best matches', 'culprit-group-exact', true);
+    return renderMatchGroup(entries, 'Best matches', 'root-cause-group-exact', true);
 }
 
 // Same-product matches are weak evidence — a product like Core covers hundreds of
 // commits per range — so they stay collapsed rather than burying the best matches.
 function renderOtherMatches(entries) {
-    return renderMatchGroup(entries, 'Other matches', 'culprit-group-weak', false);
+    return renderMatchGroup(entries, 'Other matches', 'root-cause-group-weak', false);
 }
 
 function formatWindowTime(date) {
@@ -370,7 +370,7 @@ function formatWindowTime(date) {
         : 'unknown';
 }
 
-function renderCulpritsHTML(result) {
+function renderRootCausesHTML(result) {
     const { target, bestMatches, otherMatches } = result;
     const targetLabel = escapeHtml(`${target.product} :: ${target.component}`);
     const family = componentFamily(target.component);
@@ -394,7 +394,7 @@ function renderCulpritsHTML(result) {
 
     // The window is wider than the push range on purpose — see WINDOW_LEAD_MS. Say so,
     // because a listed commit is not guaranteed to be inside the range.
-    const approximateNote = `<p class="culprit-note">Commits are matched by the date range: 
+    const approximateNote = `<p class="root-cause-note">Commits are matched by the date range: 
         ${formatWindowTime(result.windowStart)} - ${formatWindowTime(result.windowEnd)}.
         Confirm against
         <a href="https://hg.mozilla.org/${encodeURIComponent(result.repo)}/pushloghtml?fromchange=${encodeURIComponent(result.fromRevision)}&amp;tochange=${encodeURIComponent(result.toRevision)}"
@@ -405,16 +405,16 @@ function renderCulpritsHTML(result) {
         caveats.push(`The commit list hit the ${MAX_COMMIT_PAGES}-page fetch limit, so the oldest
             part of this window was not checked.`);
     }
-    const caveatNotes = caveats.map(text => `<p class="culprit-note">${text}</p>`).join('');
+    const caveatNotes = caveats.map(text => `<p class="root-cause-note">${text}</p>`).join('');
 
     const emptyNote = bestMatches.length
         ? ''
-        : `<p class="culprit-empty">No commit in this window references a bug filed against the probe's
+        : `<p class="root-cause-empty">No commit in this window references a bug filed against the probe's
            component${familyNote ? ' or a sibling of it' : ''}. The cause may be a bug in another
            component, an infrastructure change, or a commit landed without a bug.</p>`;
 
     return `
-        <p class="culprit-note">${scanned}${unresolvedNote}</p>
+        <p class="root-cause-note">${scanned}${unresolvedNote}</p>
         ${approximateNote}
         ${emptyNote}
         ${renderBestMatches(bestMatches)}

@@ -424,10 +424,10 @@ function createDetailsRow(alert, rowId) {
     return `
         <tr class="details-row" id="details-${rowId}">
             <td colspan="7" class="details-cell">
-                <div class="culprit-section">
-                    <button class="culprit-btn" id="culprit-btn-${rowId}"
-                            onclick="event.stopPropagation(); generateCulprits('${rowId}')">Generate Potential Root Causes</button>
-                    <div class="culprit-results" id="culprit-results-${rowId}"></div>
+                <div class="root-cause-section">
+                    <button class="root-cause-btn" id="root-cause-btn-${rowId}"
+                            onclick="event.stopPropagation(); generateRootCauses('${rowId}')">Generate Potential Root Causes</button>
+                    <div class="root-cause-results" id="root-cause-results-${rowId}"></div>
                 </div>
                 <div class="details-content">
                     <div class="detail-item" style="grid-row: 1;">
@@ -741,11 +741,11 @@ function getAlertRepo(alert) {
     }
 }
 
-// Button handler for "Generate Potential Culprits" — resolves the probe's Bugzilla
-// component, then hands the push range off to culprits.js.
-async function generateCulprits(rowId) {
-    const button = document.getElementById(`culprit-btn-${rowId}`);
-    const results = document.getElementById(`culprit-results-${rowId}`);
+// Button handler for "Generate Potential Root Causes" — resolves the probe's Bugzilla
+// component, then hands the push range off to root-causes.js.
+async function generateRootCauses(rowId) {
+    const button = document.getElementById(`root-cause-btn-${rowId}`);
+    const results = document.getElementById(`root-cause-results-${rowId}`);
     if (!button || !results || button.disabled) return;
 
     const alert = alertsByRowId[rowId];
@@ -755,17 +755,17 @@ async function generateCulprits(rowId) {
 
     try {
         const metadata = await fetchProbeMetadata(alert?.probe);
-        const result = await findPotentialCulprits({
+        const result = await findPotentialRootCauses({
             repo: getAlertRepo(alert),
             fromRevision: alert?.oldestPush,
             toRevision: alert?.newestPush,
             probeComponent: getBugzillaComponent(metadata),
         });
-        results.innerHTML = renderCulpritsHTML(result);
+        results.innerHTML = renderRootCausesHTML(result);
         button.textContent = 'Regenerate Potential Root Causes';
     } catch (e) {
         console.error('Could not generate root causes for', alert?.probe, e);
-        results.innerHTML = `<p class="culprit-error">${e.message}</p>`;
+        results.innerHTML = `<p class="root-cause-error">${e.message}</p>`;
         button.textContent = 'Generate Potential Root Causes';
     } finally {
         button.disabled = false;
